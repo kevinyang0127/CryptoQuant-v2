@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  crypto_quant_service:
+    build: .
+    ports: 
+      - 8080:8080
+  mongodb:
+    image: mongo:6.0
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_DATABASE=cryptoQuantDB
+      - MONGO_INITDB_ROOT_USERNAME=kevin
+      - MONGO_INITDB_ROOT_PASSWORD=123
+    volumes:
+      - ./mongo-volume:/data/db
