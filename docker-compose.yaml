@@ -10,7 +10,7 @@ services:
     ports:
       - 27017:27017
     environment:
-      - MONGO_INITDB_DATABASE=cryptoQuantDB
+      - MONGO_INITDB_DATABASE=cryptoQuantV2
       - MONGO_INITDB_ROOT_USERNAME=kevin
       - MONGO_INITDB_ROOT_PASSWORD=123
     volumes:

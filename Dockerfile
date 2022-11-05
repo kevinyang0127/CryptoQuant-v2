@@ -1,11 +1,11 @@
 FROM golang:1.19.2-alpine
 
-WORKDIR /crypto_quant
+WORKDIR /crypto_quant_v2
 
-COPY . /crypto_quant
+COPY . /crypto_quant_v2
 
-RUN cd /crypto_quant && go build
+RUN cd /crypto_quant_v2 && go build
 
 EXPOSE 8080
 
-ENTRYPOINT ./cryptoQuant
+ENTRYPOINT ./CryptoQuant-v2

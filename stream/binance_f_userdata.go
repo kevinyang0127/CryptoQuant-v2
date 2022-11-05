@@ -1,8 +1,9 @@
 package stream
 
 /*
-	資料推送源：幣安U本位合約-歸集交易
-	https://binance-docs.github.io/apidocs/futures/cn/#1e66c0284e
+	資料推送源：幣安U本位合約-帳戶信息推送
+	https://binance-docs.github.io/apidocs/futures/cn/#balance-position
+	https://binance-docs.github.io/apidocs/futures/cn/#060a012f0b
 */
 
 import (

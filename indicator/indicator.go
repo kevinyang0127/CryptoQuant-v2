@@ -11,18 +11,18 @@ import (
 )
 
 type Kline struct {
-	StartTime            int64
-	EndTime              int64
-	Open                 decimal.Decimal
-	Close                decimal.Decimal
-	High                 decimal.Decimal
-	Low                  decimal.Decimal
-	Volume               decimal.Decimal
-	TradeNum             int64
-	QuoteVolume          decimal.Decimal
-	ActiveBuyVolume      decimal.Decimal
-	ActiveBuyQuoteVolume decimal.Decimal
-	IsFinal              bool
+	StartTime            int64           `json:"startTime"`
+	EndTime              int64           `json:"endTime"`
+	Open                 decimal.Decimal `json:"open"`
+	Close                decimal.Decimal `json:"close"`
+	High                 decimal.Decimal `json:"high"`
+	Low                  decimal.Decimal `json:"low"`
+	Volume               decimal.Decimal `json:"volume"`
+	TradeNum             int64           `json:"tradeNum"`
+	QuoteVolume          decimal.Decimal `json:"quoteVolume"`
+	ActiveBuyVolume      decimal.Decimal `json:"activeBuyVolume"`
+	ActiveBuyQuoteVolume decimal.Decimal `json:"activeBuyQuoteVolume"`
+	IsFinal              bool            `json:"isFinal"`
 }
 
 func BinanceFKlineToKline(k *binanceFutures.Kline) (*Kline, error) {

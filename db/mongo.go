@@ -66,24 +66,25 @@ func (mgo *MongoDB) InsertOne(ctx context.Context, databaseName string, collecti
 	return objectID, nil
 }
 
-// 找不到的話 result == nil
-func (mgo *MongoDB) FindOne(ctx context.Context, databaseName string, collectionName string, filter bson.D) (result bson.M, err error) {
+// 找不到的話 err == mongo.ErrNoDocuments
+func (mgo *MongoDB) FindOne(ctx context.Context, databaseName string, collectionName string, filter bson.D, result interface{}) error {
 	collection := mgo.client.Database(databaseName).Collection(collectionName)
 
-	err = collection.FindOne(ctx, filter).Decode(&result)
+	err := collection.FindOne(ctx, filter).Decode(result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			// This error means your query did not match any documents.
-			return nil, nil
+			log.Println("FindOne no result")
+		} else {
+			log.Println("collection.FindOne fail")
 		}
-		log.Println("collection.FindOne fail")
-		return nil, err
+		return err
 	}
 
-	return result, nil
+	return nil
 }
 
-// 找不到的話 results == nil
+// 找不到的話 results == mongo.ErrNoDocuments
 func (mgo *MongoDB) Find(ctx context.Context, databaseName string, collectionName string, filter bson.D) ([]bson.D, error) {
 	collection := mgo.client.Database(databaseName).Collection(collectionName)
 
