@@ -14,5 +14,7 @@ type ContrarianRsiAtr struct {
 
 func (s *ContrarianRsiAtr) HandleKline(kline indicator.Kline) {
 	fmt.Println("handle kline success")
-	fmt.Println(kline)
+	if kline.IsFinal {
+		fmt.Println(kline)
+	}
 }

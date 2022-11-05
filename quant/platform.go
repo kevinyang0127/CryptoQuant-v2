@@ -118,11 +118,12 @@ func (p *Platform) ListenNewKlineStream(ctx context.Context, param stream.KlineS
 				if info.Status == strategy.Live {
 					s, err := p.strategyManager.GetStrategyByID(ctx, info.StrategyID)
 					if err != nil {
+						log.Println("strategyManager.GetStrategyByID fail")
 						log.Println(err)
-						break
+						continue
 					}
 					s.HandleKline(kline)
-					break
+					continue
 				}
 			}
 			p.mux.Unlock()
