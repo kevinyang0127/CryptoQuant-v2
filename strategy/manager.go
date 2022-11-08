@@ -82,9 +82,7 @@ func (m *Manager) GetStrategyByID(ctx context.Context, strategyID string) (Strat
 		return nil, err
 	}
 
-	// TODO
-	// info.Script -> Strategy
-	s = m.getDefaultStrategy(info.StrategyName)
+	s = m.getDefaultStrategy(info.Script)
 
 	// save in cache
 	m.strategyMap[strategyID] = s
@@ -92,13 +90,8 @@ func (m *Manager) GetStrategyByID(ctx context.Context, strategyID string) (Strat
 	return s, nil
 }
 
-func (m *Manager) getDefaultStrategy(strategyName string) Strategy {
-	switch strategyName {
-	case "ContrarianRsiAtr":
-		return &ContrarianRsiAtr{}
-	default:
-		return nil
-	}
+func (m *Manager) getDefaultStrategy(script string) Strategy {
+	return NewLuaScriptStrategy(script)
 }
 
 func (m *Manager) GetStrategyByUserIDAndName(ctx context.Context, userID string, Name string) (Strategy, error) {
