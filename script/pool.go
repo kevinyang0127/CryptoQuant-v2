@@ -10,20 +10,32 @@ import (
 	Get一個vm要記得用完Put回去
 */
 
-// Global LState pool
-var pool *luaStatePool
+var realTradePool *luaStatePool //處理真實交易的虛擬機池
+var backtestPool *luaStatePool  //處理回測的虛擬機池
 
 func init() {
-	pool = &luaStatePool{
+	realTradePool = &luaStatePool{
 		length: 10,
 		vmList: []*lua.LState{},
 	}
 
 	// add lua vm into pool
-	for i := 0; i < pool.length; i++ {
+	for i := 0; i < realTradePool.length; i++ {
 		L := lua.NewState()
-		L.PreloadModule(moduleName, loadmodule)
-		pool.vmList = append(pool.vmList, L)
+		L.PreloadModule(moduleName, loadTradeModule) // loadTradeModule
+		realTradePool.vmList = append(realTradePool.vmList, L)
+	}
+
+	backtestPool = &luaStatePool{
+		length: 10,
+		vmList: []*lua.LState{},
+	}
+
+	// add lua vm into pool
+	for i := 0; i < realTradePool.length; i++ {
+		L := lua.NewState()
+		L.PreloadModule(moduleName, loadBacktestModule) // loadBacktestModule
+		backtestPool.vmList = append(backtestPool.vmList, L)
 	}
 }
 

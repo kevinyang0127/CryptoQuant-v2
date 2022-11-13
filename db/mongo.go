@@ -9,14 +9,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+const (
+	DBNAME   = "cryptoQuantV2"
+	URI      = "mongodb://kevin:123@mongodb:27017/?connect=direct"
+	LocalURI = "mongodb://kevin:123@127.0.0.1:27017/?connect=direct"
+)
+
 type MongoDB struct {
 	client *mongo.Client
 }
 
-func NewMongoDB() (db *MongoDB, disconnect func(), err error) {
+func NewMongoDB(uri string) (db *MongoDB, disconnect func(), err error) {
 	ctx := context.Background()
 	serverAPIOptions := options.ServerAPI(options.ServerAPIVersion1)
-	uri := "mongodb://kevin:123@mongodb:27017/?connect=direct"
 	log.Println("uri: ", uri)
 	clientOptions := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPIOptions)
 	client, err := mongo.Connect(ctx, clientOptions)

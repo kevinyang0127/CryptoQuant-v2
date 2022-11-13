@@ -1,6 +1,8 @@
 package script
 
 import (
+	module "CryptoQuant-v2/script/module"
+
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -8,56 +10,42 @@ const (
 	moduleName = "cryptoquant"
 )
 
-func loadmodule(L *lua.LState) int {
+func loadTradeModule(L *lua.LState) int {
+	var exports = map[string]lua.LGFunction{}
+
+	for k, v := range module.GetTradeExports() {
+		exports[k] = v
+	}
+
+	for k, v := range module.GetIndicatorExports() {
+		exports[k] = v
+	}
+
+	for k, v := range module.GetDataExports() {
+		exports[k] = v
+	}
+
 	mod := L.SetFuncs(L.NewTable(), exports)
 	L.Push(mod)
 	return 1
 }
 
-var exports = map[string]lua.LGFunction{
-	"saveData": saveData,
-	"getData":  getData,
-	"entry":    entry,
-	"exit":     exit,
-	"order":    order,
-	"ma":       ma,
-	"ema":      ema,
-	"rsi":      rsi,
-	"atr":      atr,
-}
+func loadBacktestModule(L *lua.LState) int {
+	var exports = map[string]lua.LGFunction{}
 
-func saveData(L *lua.LState) int {
-	return 0
-}
+	for k, v := range module.GetBacktestExports() {
+		exports[k] = v
+	}
 
-func getData(L *lua.LState) int {
-	return 0
-}
+	for k, v := range module.GetIndicatorExports() {
+		exports[k] = v
+	}
 
-func entry(L *lua.LState) int {
-	return 0
-}
+	for k, v := range module.GetDataExports() {
+		exports[k] = v
+	}
 
-func exit(L *lua.LState) int {
-	return 0
-}
-
-func order(L *lua.LState) int {
-	return 0
-}
-
-func ma(L *lua.LState) int {
-	return 0
-}
-
-func ema(L *lua.LState) int {
-	return 0
-}
-
-func rsi(L *lua.LState) int {
-	return 0
-}
-
-func atr(L *lua.LState) int {
-	return 0
+	mod := L.SetFuncs(L.NewTable(), exports)
+	L.Push(mod)
+	return 1
 }

@@ -82,7 +82,7 @@ func (m *Manager) GetStrategyByID(ctx context.Context, strategyID string) (Strat
 		return nil, err
 	}
 
-	s = m.getDefaultStrategy(info.Script)
+	s = m.getDefaultStrategy(info.Script, info.UserID)
 
 	// save in cache
 	m.strategyMap[strategyID] = s
@@ -90,17 +90,17 @@ func (m *Manager) GetStrategyByID(ctx context.Context, strategyID string) (Strat
 	return s, nil
 }
 
-func (m *Manager) getDefaultStrategy(script string) Strategy {
-	return NewLuaScriptStrategy(script)
+func (m *Manager) getDefaultStrategy(script string, userID string) Strategy {
+	return NewLuaScriptStrategy(script, userID)
 }
 
 func (m *Manager) GetStrategyByUserIDAndName(ctx context.Context, userID string, Name string) (Strategy, error) {
 	return nil, nil
 }
 
-func (m *Manager) GetByUserID(ctx context.Context, userID string) *StrategyInfo {
+func (m *Manager) GetByUserID(ctx context.Context, userID string) ([]*StrategyInfo, error) {
 	//TODO
-	return nil
+	return nil, nil
 }
 
 func (m *Manager) GetStrategyInfo(ctx context.Context, strategyID string) (*StrategyInfo, error) {
