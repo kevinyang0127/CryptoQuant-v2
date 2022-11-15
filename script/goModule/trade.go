@@ -1,4 +1,4 @@
-package script
+package gomodule
 
 import lua "github.com/yuin/gopher-lua"
 

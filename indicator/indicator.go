@@ -2,11 +2,8 @@ package indicator
 
 import (
 	"log"
-	"time"
 
 	binanceFutures "github.com/adshao/go-binance/v2/futures"
-	"github.com/sdcoffey/big"
-	"github.com/sdcoffey/techan"
 	"github.com/shopspring/decimal"
 )
 
@@ -153,30 +150,4 @@ func BinanceFKlineEventToKline(event binanceFutures.WsKlineEvent) (*Kline, error
 		ActiveBuyQuoteVolume: activeBuyQuoteVolume,
 		IsFinal:              event.Kline.IsFinal,
 	}, nil
-}
-
-// 只加入已經收盤的k線
-func AddKline(series *techan.TimeSeries, kline *Kline) {
-	if !kline.IsFinal {
-		return
-	}
-
-	// 累積到1000筆資料時 只保留最新100筆
-	if len(series.Candles) >= 1000 {
-		newSeries := techan.NewTimeSeries()
-		for i := 900; i < len(series.Candles); i++ {
-			newSeries.AddCandle(series.Candles[i])
-		}
-		series.Candles = newSeries.Candles
-	}
-
-	startTimeSec := kline.StartTime / 1000
-	periodMs := kline.EndTime - kline.StartTime
-	period := techan.NewTimePeriod(time.Unix(startTimeSec, 0), time.Duration(periodMs)*time.Millisecond)
-	candle := techan.NewCandle(period)
-	candle.OpenPrice = big.NewFromString(kline.Open.String())
-	candle.ClosePrice = big.NewFromString(kline.Close.String())
-	candle.MaxPrice = big.NewFromString(kline.High.String())
-	candle.MinPrice = big.NewFromString(kline.Low.String())
-	series.AddCandle(candle)
 }

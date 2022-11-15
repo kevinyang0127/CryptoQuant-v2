@@ -2,6 +2,7 @@ package script
 
 import (
 	"CryptoQuant-v2/indicator"
+	"CryptoQuant-v2/script/gomodule"
 	"fmt"
 	"log"
 	"strconv"
@@ -37,6 +38,24 @@ func GetLuaScriptHandler() *luaScriptHandler {
 				vmList: []*lua.LState{},
 			},
 			backtestModuleManager: newModuleManager(),
+		}
+
+		for k, v := range gomodule.GetTradeExports() {
+			handler.moduleManager.addNewExport(k, v)
+		}
+
+		for k, v := range gomodule.GetBacktestExports() {
+			handler.backtestModuleManager.addNewExport(k, v)
+		}
+
+		for k, v := range gomodule.GetSaveDataExports() {
+			handler.moduleManager.addNewExport(k, v)
+			handler.backtestModuleManager.addNewExport(k, v)
+		}
+
+		for k, v := range gomodule.GetIndicatorExports() {
+			handler.moduleManager.addNewExport(k, v)
+			handler.backtestModuleManager.addNewExport(k, v)
 		}
 
 		/*
@@ -99,6 +118,7 @@ func (h *luaScriptHandler) RunScriptHandleKline(script string) error {
 	return nil
 }
 
+// 新增由lua撰寫的module，nRet為返回值數量
 func (h *luaScriptHandler) AddNewModule(funcName string, script string, nRet int) error {
 	key, err := h.precompileManager.precompile(script)
 	if err != nil {
