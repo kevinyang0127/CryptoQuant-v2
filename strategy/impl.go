@@ -6,21 +6,23 @@ import (
 )
 
 type LuaScriptStrategy struct {
-	script string
-	userID string
+	strategyID string
+	userID     string
+	script     string
 }
 
-func NewLuaScriptStrategy(script string, userID string) *LuaScriptStrategy {
+func NewLuaScriptStrategy(strategyID string, userID string, script string) *LuaScriptStrategy {
 	return &LuaScriptStrategy{
-		script: script,
-		userID: userID,
+		strategyID: strategyID,
+		script:     script,
+		userID:     userID,
 	}
 }
 
 func (s *LuaScriptStrategy) HandleKline(klines []indicator.Kline, kline indicator.Kline) {
-	script.RunScriptHandleKline(s.script, kline)
+	script.GetLuaScriptHandler().RunScriptHandleKline(s.script)
 }
 
 func (s *LuaScriptStrategy) HandleBackTestKline(simulationID string, klines []indicator.Kline, kline indicator.Kline) {
-	script.RunBacktestHandleKline(s.script, s.userID, simulationID, klines, kline)
+	script.GetLuaScriptHandler().RunBacktestHandleKline(s.strategyID, s.userID, simulationID, s.script, klines, kline)
 }

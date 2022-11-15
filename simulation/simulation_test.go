@@ -58,7 +58,7 @@ func TestLong(t *testing.T) {
 	assert.Equal(t, qty, s.positon.Quantity)
 
 	exitPrice := decimal.NewFromFloat(1600)
-	exitQty := decimal.NewFromFloat(-0.5)
+	exitQty := decimal.NewFromFloat(0.5)
 	s.Exit(context.TODO(), exitPrice, exitQty, false, time.Now().Unix())
 
 	assert.Empty(t, s.positon)
@@ -75,7 +75,7 @@ func TestLong(t *testing.T) {
 	assert.Equal(t, qty, s2.positon.Quantity)
 
 	exitPrice = decimal.NewFromFloat(1400)
-	exitQty = decimal.NewFromFloat(-0.5)
+	exitQty = decimal.NewFromFloat(0.5)
 	s2.Exit(context.TODO(), exitPrice, exitQty, false, time.Now().Unix())
 
 	assert.Empty(t, s2.positon)

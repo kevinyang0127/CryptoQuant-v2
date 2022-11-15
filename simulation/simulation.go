@@ -163,7 +163,7 @@ func (s *Simulation) Entry(ctx context.Context, price decimal.Decimal, quantity 
 	}
 }
 
-// 關倉/減倉, quantity為正代表買入，為負代表賣出
+// 關倉/減倉, quantity只能為正，會自動處理成相反方向
 func (s *Simulation) Exit(ctx context.Context, price decimal.Decimal, quantity decimal.Decimal, isMaker bool, klineTimestamp int64) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
@@ -173,20 +173,23 @@ func (s *Simulation) Exit(ctx context.Context, price decimal.Decimal, quantity d
 		return
 	}
 
-	if s.positon == nil {
-		log.Println("SimulationEngine Exit fail, no position to close")
+	if quantity.IsNegative() {
+		log.Println("SimulationEngine Exit fail, quantity IsNegative")
 		return
 	}
 
-	// 關倉方向和倉位方向相同
-	if s.positon.Quantity.Mul(quantity).IsPositive() {
-		log.Println("SimulationEngine Exit fail, close position wrong side")
+	if s.positon == nil {
+		log.Println("SimulationEngine Exit fail, no position to close")
 		return
 	}
 
 	if quantity.Abs().GreaterThan(s.positon.Quantity.Abs()) {
 		log.Println("SimulationEngine Exit fail, not enough position to close")
 		return
+	}
+
+	if s.positon.Quantity.IsPositive() {
+		quantity = quantity.Mul(decimal.NewFromInt(-1))
 	}
 
 	fee := decimal.Zero

@@ -1,7 +1,7 @@
 package script
 
 import (
-	module "CryptoQuant-v2/script/module"
+	"sync"
 
 	lua "github.com/yuin/gopher-lua"
 )
@@ -10,42 +10,31 @@ const (
 	moduleName = "cryptoquant"
 )
 
-func loadTradeModule(L *lua.LState) int {
-	var exports = map[string]lua.LGFunction{}
-
-	for k, v := range module.GetTradeExports() {
-		exports[k] = v
-	}
-
-	for k, v := range module.GetIndicatorExports() {
-		exports[k] = v
-	}
-
-	for k, v := range module.GetDataExports() {
-		exports[k] = v
-	}
-
-	mod := L.SetFuncs(L.NewTable(), exports)
-	L.Push(mod)
-	return 1
+type moduleManager struct {
+	mux     sync.Mutex
+	exports map[string]lua.LGFunction
 }
 
-func loadBacktestModule(L *lua.LState) int {
-	var exports = map[string]lua.LGFunction{}
-
-	for k, v := range module.GetBacktestExports() {
-		exports[k] = v
+func newModuleManager() *moduleManager {
+	return &moduleManager{
+		exports: make(map[string]lua.LGFunction),
 	}
+}
 
-	for k, v := range module.GetIndicatorExports() {
-		exports[k] = v
-	}
+func (m *moduleManager) getExports() map[string]lua.LGFunction {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	return m.exports
+}
 
-	for k, v := range module.GetDataExports() {
-		exports[k] = v
-	}
+func (m *moduleManager) addNewExport(funcName string, lgFunc lua.LGFunction) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	m.exports[funcName] = lgFunc
+}
 
-	mod := L.SetFuncs(L.NewTable(), exports)
-	L.Push(mod)
-	return 1
+func (m *moduleManager) deleteExport(funcName string) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	delete(m.exports, funcName)
 }

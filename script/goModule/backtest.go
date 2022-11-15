@@ -11,9 +11,9 @@ import (
 
 func GetBacktestExports() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
-		"entry": BacktestEntry,
-		"exit":  BacktestExit,
-		"order": BacktestOrder,
+		"entry": backtestEntry,
+		"exit":  backtestExit,
+		"order": backtestOrder,
 	}
 }
 
@@ -21,7 +21,7 @@ func GetBacktestExports() map[string]lua.LGFunction {
 cryptoquant.entry(side, qty) --市價開倉
 no return value
 */
-func BacktestEntry(L *lua.LState) int {
+func backtestEntry(L *lua.LState) int {
 	paramCount := L.GetTop()
 	if paramCount != 2 {
 		log.Println("BacktestEntry paramCount != 2")
@@ -44,7 +44,7 @@ func BacktestEntry(L *lua.LState) int {
 cryptoquant.exit(qty, closeAll) --市價關倉
 no return value
 */
-func BacktestExit(L *lua.LState) int {
+func backtestExit(L *lua.LState) int {
 	return 0
 }
 
@@ -52,6 +52,6 @@ func BacktestExit(L *lua.LState) int {
 cryptoquant.order(side, price, qty) --限價下單
 no return value
 */
-func BacktestOrder(L *lua.LState) int {
+func backtestOrder(L *lua.LState) int {
 	return 0
 }

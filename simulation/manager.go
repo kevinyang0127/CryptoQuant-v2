@@ -86,6 +86,11 @@ func (m *Manager) Entry(ctx context.Context, simulationID string, side bool, pri
 		return err
 	}
 
+	if quantityD.IsNegative() {
+		log.Println("input quantity IsNegative")
+		return fmt.Errorf("input quantity IsNegative")
+	}
+
 	if !side {
 		quantityD = quantityD.Mul(decimal.NewFromInt(-1))
 	}
@@ -95,5 +100,54 @@ func (m *Manager) Entry(ctx context.Context, simulationID string, side bool, pri
 		return fmt.Errorf("simulationMap can't find simulationID = %s", simulationID)
 	}
 	s.Entry(ctx, priceD, quantityD, isMaker, klineTimestamp)
+	return nil
+}
+
+func (m *Manager) Exit(ctx context.Context, simulationID string, price string, quantity string, isMaker bool, klineTimestamp int64) error {
+	priceD, err := decimal.NewFromString(price)
+	if err != nil {
+		log.Println("decimal.NewFromString error")
+		return err
+	}
+	quantityD, err := decimal.NewFromString(quantity)
+	if err != nil {
+		log.Println("decimal.NewFromString error")
+		return err
+	}
+
+	s, ok := m.simulationMap[simulationID]
+	if !ok {
+		return fmt.Errorf("simulationMap can't find simulationID = %s", simulationID)
+	}
+	s.Exit(ctx, priceD, quantityD, isMaker, klineTimestamp)
+	return nil
+}
+
+func (m *Manager) Order(ctx context.Context, simulationID string, side bool, price string, quantity string) error {
+	priceD, err := decimal.NewFromString(price)
+	if err != nil {
+		log.Println("decimal.NewFromString error")
+		return err
+	}
+	quantityD, err := decimal.NewFromString(quantity)
+	if err != nil {
+		log.Println("decimal.NewFromString error")
+		return err
+	}
+
+	if quantityD.IsNegative() {
+		log.Println("input quantity IsNegative")
+		return fmt.Errorf("input quantity IsNegative")
+	}
+
+	if !side {
+		quantityD = quantityD.Mul(decimal.NewFromInt(-1))
+	}
+
+	s, ok := m.simulationMap[simulationID]
+	if !ok {
+		return fmt.Errorf("simulationMap can't find simulationID = %s", simulationID)
+	}
+	s.Order(ctx, priceD, quantityD)
 	return nil
 }

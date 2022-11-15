@@ -4,20 +4,20 @@ import lua "github.com/yuin/gopher-lua"
 
 func GetTradeExports() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
-		"entry": Entry,
-		"exit":  Exit,
-		"order": Order,
+		"entry": entry,
+		"exit":  exit,
+		"order": order,
 	}
 }
 
-func Entry(L *lua.LState) int {
+func entry(L *lua.LState) int {
 	return 0
 }
 
-func Exit(L *lua.LState) int {
+func exit(L *lua.LState) int {
 	return 0
 }
 
-func Order(L *lua.LState) int {
+func order(L *lua.LState) int {
 	return 0
 }
