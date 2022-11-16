@@ -6,7 +6,6 @@ require (
 	github.com/adshao/go-binance/v2 v2.3.10
 	github.com/cinar/indicator v1.2.24
 	github.com/gin-gonic/gin v1.8.1
-	github.com/sdcoffey/techan v0.12.1
 	github.com/shopspring/decimal v1.3.1
 	github.com/stretchr/testify v1.8.1
 	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64
@@ -33,7 +32,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/sdcoffey/big v0.7.0 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect

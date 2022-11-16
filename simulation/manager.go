@@ -151,3 +151,20 @@ func (m *Manager) Order(ctx context.Context, simulationID string, side bool, pri
 	s.Order(ctx, priceD, quantityD)
 	return nil
 }
+
+func (m *Manager) CloseAllOrder(ctx context.Context, simulationID string) error {
+	s, ok := m.simulationMap[simulationID]
+	if !ok {
+		return fmt.Errorf("simulationMap can't find simulationID = %s", simulationID)
+	}
+	s.CloseAllOrder(ctx)
+	return nil
+}
+
+func (m *Manager) GetAllOrder(ctx context.Context, simulationID string) ([]*Order, error) {
+	s, ok := m.simulationMap[simulationID]
+	if !ok {
+		return nil, fmt.Errorf("simulationMap can't find simulationID = %s", simulationID)
+	}
+	return s.GetAllOrder(ctx), nil
+}

@@ -1,4 +1,4 @@
-package gomodule
+package module
 
 import (
 	"CryptoQuant-v2/simulation"
@@ -11,9 +11,11 @@ import (
 
 func GetBacktestExports() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
-		"entry": backtestEntry,
-		"exit":  backtestExit,
-		"order": backtestOrder,
+		"entry":           backtestEntry,
+		"exit":            backtestExit,
+		"order":           backtestOrder,
+		"cancelAllOrders": backtestCancelAllOrder,
+		"getAllOrders":    backtestGetAllOrders,
 	}
 }
 
@@ -81,4 +83,44 @@ func backtestOrder(L *lua.LState) int {
 	simulation.SimulationManager.Order(context.Background(), simulationID, side, price.String(), qty.String())
 
 	return 0
+}
+
+/*
+cryptoquant.cancelAllOrder() --取消所有掛單
+no return value
+*/
+func backtestCancelAllOrder(L *lua.LState) int {
+
+	simulationID := L.GetGlobal("SimulationID").String()
+	simulation.SimulationManager.CloseAllOrder(context.Background(), simulationID)
+
+	return 0
+}
+
+/*
+cryptoquant.getOrders() --取得目前所有掛單
+return orders table
+
+	orders{
+		order{
+			["side"] = true,
+			["price"] = 1300.5,
+			["qty"] = 0.5,
+		},
+		order{
+			["side"] = false,
+			["price"] = 1350.5,
+			["qty"] = 0.5,
+		}
+	}
+*/
+func backtestGetAllOrders(L *lua.LState) int {
+
+	simulationID := L.GetGlobal("SimulationID").String()
+	orders, _ := simulation.SimulationManager.GetAllOrder(context.Background(), simulationID)
+
+	// TODO: 改成回傳整個list
+	L.Push(lua.LNumber(len(orders)))
+
+	return 1
 }

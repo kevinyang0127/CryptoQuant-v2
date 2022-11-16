@@ -56,7 +56,7 @@ func addStrategy(c *gin.Context) {
 		return
 	}
 
-	err = platform.AddStrategy(c, param.UserID, param.Exchange, param.Symbol, param.Timeframe,
+	strategyID, err := platform.AddStrategy(c, param.UserID, param.Exchange, param.Symbol, param.Timeframe,
 		strategy.StrategyStatus(param.Status), param.StrategyName, param.Script)
 	if err != nil {
 		log.Println(err)
@@ -67,7 +67,8 @@ func addStrategy(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"msg": "add strategy success",
+		"strategyID": strategyID,
+		"msg":        "add strategy success",
 	})
 }
 

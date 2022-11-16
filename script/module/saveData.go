@@ -1,4 +1,4 @@
-package gomodule
+package module
 
 import (
 	"sync"
@@ -30,6 +30,7 @@ var saveStrategyData *saveMetaData
 var once sync.Once
 
 type saveMetaData struct {
+	mux         sync.Mutex
 	metaDataMap map[string]lua.LValue
 }
 
@@ -44,9 +45,17 @@ func GetSaveStrategyData() *saveMetaData {
 }
 
 func (s *saveMetaData) save(key string, metadata lua.LValue) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	s.metaDataMap[key] = metadata
 }
 
 func (s *saveMetaData) get(key string) (metadata lua.LValue) {
-	return s.metaDataMap[key]
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	v, ok := s.metaDataMap[key]
+	if !ok {
+		return lua.LNil
+	}
+	return v
 }

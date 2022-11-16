@@ -2,9 +2,10 @@ package script
 
 import (
 	"CryptoQuant-v2/indicator"
-	"CryptoQuant-v2/script/gomodule"
+	"CryptoQuant-v2/script/module"
 	"fmt"
 	"log"
+	"math/rand"
 	"strconv"
 	"sync"
 
@@ -40,20 +41,20 @@ func GetLuaScriptHandler() *luaScriptHandler {
 			backtestModuleManager: newModuleManager(),
 		}
 
-		for k, v := range gomodule.GetTradeExports() {
+		for k, v := range module.GetTradeExports() {
 			handler.moduleManager.addNewExport(k, v)
 		}
 
-		for k, v := range gomodule.GetBacktestExports() {
+		for k, v := range module.GetBacktestExports() {
 			handler.backtestModuleManager.addNewExport(k, v)
 		}
 
-		for k, v := range gomodule.GetSaveDataExports() {
+		for k, v := range module.GetSaveDataExports() {
 			handler.moduleManager.addNewExport(k, v)
 			handler.backtestModuleManager.addNewExport(k, v)
 		}
 
-		for k, v := range gomodule.GetIndicatorExports() {
+		for k, v := range module.GetIndicatorExports() {
 			handler.moduleManager.addNewExport(k, v)
 			handler.backtestModuleManager.addNewExport(k, v)
 		}
@@ -101,8 +102,19 @@ func (h *luaScriptHandler) RunScriptHandleKline(script string) error {
 		return err
 	}
 
+	L.SetGlobal("NowPrice", lua.LString("nowwwwprice"))
+
 	klines := &lua.LTable{}
 	kline := &lua.LTable{}
+	for i := 0; i < 100; i++ {
+		kline = &lua.LTable{}
+		kline.RawSet(lua.LString("open"), lua.LNumber(1300.29+rand.Float64()))
+		kline.RawSet(lua.LString("close"), lua.LNumber(1308.73+rand.Float64()))
+		kline.RawSet(lua.LString("high"), lua.LNumber(1355.42+rand.Float64()))
+		kline.RawSet(lua.LString("low"), lua.LNumber(1290.14+rand.Float64()))
+		kline.RawSet(lua.LString("isFinal"), lua.LBool(true))
+		klines.RawSetInt(i+1, kline)
+	}
 
 	err := L.CallByParam(lua.P{
 		Fn:      L.GetGlobal("HandleKline"), // 呼叫HandleKline函數
@@ -174,18 +186,51 @@ func (h *luaScriptHandler) RunBacktestHandleKline(strategyID string, userID stri
 		return err
 	}
 
-	klines := &lua.LTable{}
-	kline := &lua.LTable{}
+	lKlines, lKline := h.toLuaScriptKlineData(kls, kl)
 
 	err := L.CallByParam(lua.P{
 		Fn:      L.GetGlobal("HandleKline"), // 呼叫HandleKline函數
 		NRet:    0,                          // 指定返回值數量
 		Protect: true,                       // 如果出現異常，是panic還是返回err
-	}, klines, kline) // 傳遞輸入參數
+	}, lKlines, lKline) // 傳遞輸入參數
 	if err != nil {
 		log.Println("L.CallByParam fail")
+		log.Println(err)
 		return err
 	}
 
 	return nil
+}
+
+func (h *luaScriptHandler) toLuaScriptKlineData(kls []indicator.Kline, kl indicator.Kline) (LKlines *lua.LTable, LKline *lua.LTable) {
+	LKlines = &lua.LTable{}
+	LKline = &lua.LTable{}
+	for i, k := range kls {
+		LKline = &lua.LTable{}
+		LKline.RawSet(lua.LString("startTime"), lua.LNumber(k.StartTime))
+		LKline.RawSet(lua.LString("endTime"), lua.LNumber(k.EndTime))
+		LKline.RawSet(lua.LString("open"), lua.LNumber(k.Open.InexactFloat64()))
+		LKline.RawSet(lua.LString("close"), lua.LNumber(k.Close.InexactFloat64()))
+		LKline.RawSet(lua.LString("high"), lua.LNumber(k.High.InexactFloat64()))
+		LKline.RawSet(lua.LString("low"), lua.LNumber(k.Low.InexactFloat64()))
+		LKline.RawSet(lua.LString("volume"), lua.LNumber(k.Volume.InexactFloat64()))
+		LKline.RawSet(lua.LString("quoteVolume"), lua.LNumber(k.QuoteVolume.InexactFloat64()))
+		LKline.RawSet(lua.LString("activeBuyVolume"), lua.LNumber(k.ActiveBuyVolume.InexactFloat64()))
+		LKline.RawSet(lua.LString("activeBuyQuoteVolume"), lua.LNumber(k.ActiveBuyQuoteVolume.InexactFloat64()))
+		LKline.RawSet(lua.LString("isFinal"), lua.LBool(k.IsFinal))
+		LKlines.RawSetInt(i+1, LKline)
+	}
+	LKline = &lua.LTable{}
+	LKline.RawSet(lua.LString("startTime"), lua.LNumber(kl.StartTime))
+	LKline.RawSet(lua.LString("endTime"), lua.LNumber(kl.EndTime))
+	LKline.RawSet(lua.LString("open"), lua.LNumber(kl.Open.InexactFloat64()))
+	LKline.RawSet(lua.LString("close"), lua.LNumber(kl.Close.InexactFloat64()))
+	LKline.RawSet(lua.LString("high"), lua.LNumber(kl.High.InexactFloat64()))
+	LKline.RawSet(lua.LString("low"), lua.LNumber(kl.Low.InexactFloat64()))
+	LKline.RawSet(lua.LString("volume"), lua.LNumber(kl.Volume.InexactFloat64()))
+	LKline.RawSet(lua.LString("quoteVolume"), lua.LNumber(kl.QuoteVolume.InexactFloat64()))
+	LKline.RawSet(lua.LString("activeBuyVolume"), lua.LNumber(kl.ActiveBuyVolume.InexactFloat64()))
+	LKline.RawSet(lua.LString("activeBuyQuoteVolume"), lua.LNumber(kl.ActiveBuyQuoteVolume.InexactFloat64()))
+	LKline.RawSet(lua.LString("isFinal"), lua.LBool(kl.IsFinal))
+	return
 }

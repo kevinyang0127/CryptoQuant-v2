@@ -135,8 +135,8 @@ func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineC
 					continue
 				}
 				simulationKlineCh <- kline
+				beforeKlines = append(beforeKlines, kline) // beforeKlines包含目前kline
 				s.HandleBackTestKline(simulationID, beforeKlines, kline)
-				beforeKlines = append(beforeKlines, kline)
 			}
 
 			startTimeMs = endTimeMs

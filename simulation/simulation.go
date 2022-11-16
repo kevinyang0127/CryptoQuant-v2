@@ -82,7 +82,9 @@ func (s *Simulation) ListenNewKline(ctx context.Context, ch chan indicator.Kline
 
 // fixme: 回測如果一根kline範圍太大，有可能同時吃到止損止盈單，order應該要做排斥？
 func (s *Simulation) checkOrderMatch(ctx context.Context, kline indicator.Kline) {
-	for _, order := range s.orders {
+	doneOrderIndexs := make(map[int]bool)
+	someOrderDone := false
+	for i, order := range s.orders {
 		// 掛單價位在k線範圍當中
 		if order.Price.GreaterThanOrEqual(kline.Low) && order.Price.LessThanOrEqual(kline.High) {
 			if s.positon == nil || s.positon.Quantity.Mul(order.Quantity).IsPositive() {
@@ -90,9 +92,22 @@ func (s *Simulation) checkOrderMatch(ctx context.Context, kline indicator.Kline)
 				s.Entry(ctx, order.Price, order.Quantity, true, kline.EndTime)
 			} else {
 				// 關倉/減倉
-				s.Exit(ctx, order.Price, order.Quantity, true, kline.EndTime)
+				s.Exit(ctx, order.Price, order.Quantity.Abs(), true, kline.EndTime)
+			}
+			doneOrderIndexs[i] = true
+			someOrderDone = true
+		}
+	}
+
+	if someOrderDone {
+		// remove done order
+		newOrders := []*Order{}
+		for i := 0; i < len(s.orders); i++ {
+			if !doneOrderIndexs[i] {
+				newOrders = append(newOrders, s.orders[i])
 			}
 		}
+		s.orders = newOrders
 	}
 }
 
@@ -252,4 +267,11 @@ func (s *Simulation) CloseAllOrder(ctx context.Context) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	s.orders = []*Order{}
+}
+
+// 取得所有掛單
+func (s *Simulation) GetAllOrder(ctx context.Context) []*Order {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	return s.orders
 }

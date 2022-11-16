@@ -40,19 +40,19 @@ func NewPlatform(mongoDB *db.MongoDB) *Platform {
 新增strategy，並監聽所需資料推送源
 */
 func (p *Platform) AddStrategy(ctx context.Context, userID string, exchange string, symbol string,
-	timeframe string, status strategy.StrategyStatus, strategyName string, script string) error {
+	timeframe string, status strategy.StrategyStatus, strategyName string, script string) (strategyID string, err error) {
 
-	strategyID, err := p.strategyManager.Add(ctx, userID, exchange, symbol, timeframe, status, strategyName, script)
+	strategyID, err = p.strategyManager.Add(ctx, userID, exchange, symbol, timeframe, status, strategyName, script)
 	if err != nil {
 		log.Println("strategyManager.Add fail")
-		return err
+		return "", err
 	}
 
 	if status == strategy.Live {
 		streamName, err := p.getStreamName(exchange)
 		if err != nil {
 			log.Println("p.getStreamName fail")
-			return err
+			return "", err
 		}
 
 		streamParam := stream.KlineStreamParam{
@@ -70,7 +70,7 @@ func (p *Platform) AddStrategy(ctx context.Context, userID string, exchange stri
 		p.liveStrategyID[streamKey] = append(p.liveStrategyID[streamKey], strategyID)
 	}
 
-	return nil
+	return strategyID, nil
 }
 
 func (p *Platform) getStreamName(exchangeName string) (stream.StreamName, error) {
