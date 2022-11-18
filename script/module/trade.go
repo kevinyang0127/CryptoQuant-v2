@@ -36,3 +36,12 @@ func getAllOrders(L *lua.LState) int {
 	L.Push(lua.LNumber(0))
 	return 1
 }
+
+/*
+cryptoquant.hasPosition() --目前是否還有倉位
+return bool
+*/
+func hasPosition(L *lua.LState) int {
+
+	return 0
+}

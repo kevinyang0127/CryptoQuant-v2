@@ -74,17 +74,18 @@ func addStrategy(c *gin.Context) {
 
 func backtesting(c *gin.Context) {
 	type Param struct {
-		UserID              string `json:"userID"`
-		Exchange            string `json:"exchange"`
-		Symbol              string `json:"symbol"`
-		Timeframe           string `json:"timeframe"`
-		StrategyID          string `json:"strategyID"`
-		StartBalance        string `json:"startBalance"`
-		Lever               int    `json:"lever"`
-		TakerCommissionRate string `json:"takerCommissionRate"`
-		MakerCommissionRate string `json:"makerCommissionRate"`
-		StartTimeMs         int64  `json:"startTimeMs"`
-		EndTimeMs           int64  `json:"endTimeMs"`
+		UserID                string `json:"userID"`
+		Exchange              string `json:"exchange"`
+		Symbol                string `json:"symbol"`
+		Timeframe             string `json:"timeframe"`
+		KlineHistoryPrecision int    `json:"klineHistoryPrecision"`
+		StrategyID            string `json:"strategyID"`
+		StartBalance          string `json:"startBalance"`
+		Lever                 int    `json:"lever"`
+		TakerCommissionRate   string `json:"takerCommissionRate"`
+		MakerCommissionRate   string `json:"makerCommissionRate"`
+		StartTimeMs           int64  `json:"startTimeMs"`
+		EndTimeMs             int64  `json:"endTimeMs"`
 	}
 
 	param := Param{}
@@ -95,7 +96,7 @@ func backtesting(c *gin.Context) {
 	}
 
 	backtestingClient := quant.NewBackTestingClient(MongoDB, param.UserID, param.StrategyID, param.Exchange, param.Symbol,
-		param.Timeframe, param.StartBalance, param.Lever, param.TakerCommissionRate, param.MakerCommissionRate,
+		param.Timeframe, param.KlineHistoryPrecision, param.StartBalance, param.Lever, param.TakerCommissionRate, param.MakerCommissionRate,
 		param.StartTimeMs, param.EndTimeMs)
 
 	simulationID, err := backtestingClient.Backtest(c)

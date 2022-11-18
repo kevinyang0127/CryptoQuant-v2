@@ -168,3 +168,11 @@ func (m *Manager) GetAllOrder(ctx context.Context, simulationID string) ([]*Orde
 	}
 	return s.GetAllOrder(ctx), nil
 }
+
+func (m *Manager) GetPosition(ctx context.Context, simulationID string) (*Position, error) {
+	s, ok := m.simulationMap[simulationID]
+	if !ok {
+		return nil, fmt.Errorf("simulationMap can't find simulationID = %s", simulationID)
+	}
+	return s.GetPosition(ctx), nil
+}

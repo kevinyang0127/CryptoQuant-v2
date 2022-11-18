@@ -13,36 +13,38 @@ import (
 )
 
 type BacktestingClient struct {
-	userID              string
-	strategyID          string
-	exchange            string
-	symbol              string
-	timeframe           string
-	startBalance        string
-	lever               int
-	takerCommissionRate string
-	makerCommissionRate string
-	startTimeMs         int64
-	endTimeMs           int64
-	strategyManager     *strategy.Manager
+	userID                string
+	strategyID            string
+	exchange              string
+	symbol                string
+	timeframe             string
+	klineHistoryPrecision int
+	startBalance          string
+	lever                 int
+	takerCommissionRate   string
+	makerCommissionRate   string
+	startTimeMs           int64
+	endTimeMs             int64
+	strategyManager       *strategy.Manager
 }
 
 func NewBackTestingClient(mongoDB *db.MongoDB, userID string, strategyID string, exchange string, symbol string,
-	timeframe string, startBalance string, lever int, takerCommissionRate string, makerCommissionRate string,
+	timeframe string, klineHistoryPrecision int, startBalance string, lever int, takerCommissionRate string, makerCommissionRate string,
 	startTimeMs int64, endTimeMs int64) *BacktestingClient {
 	return &BacktestingClient{
-		userID:              userID,
-		strategyID:          strategyID,
-		exchange:            exchange,
-		symbol:              symbol,
-		timeframe:           timeframe,
-		startBalance:        startBalance,
-		lever:               lever,
-		takerCommissionRate: takerCommissionRate,
-		makerCommissionRate: makerCommissionRate,
-		startTimeMs:         startTimeMs,
-		endTimeMs:           endTimeMs,
-		strategyManager:     strategy.NewManager(mongoDB),
+		userID:                userID,
+		strategyID:            strategyID,
+		exchange:              exchange,
+		symbol:                symbol,
+		timeframe:             timeframe,
+		klineHistoryPrecision: klineHistoryPrecision,
+		startBalance:          startBalance,
+		lever:                 lever,
+		takerCommissionRate:   takerCommissionRate,
+		makerCommissionRate:   makerCommissionRate,
+		startTimeMs:           startTimeMs,
+		endTimeMs:             endTimeMs,
+		strategyManager:       strategy.NewManager(mongoDB),
 	}
 }
 
@@ -128,15 +130,27 @@ func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineC
 			klines, err := ex.GetLimitKlineHistoryByTime(ctx, b.symbol, b.timeframe, maxKlineOnce, startTimeMs, endTimeMs)
 			if err != nil {
 				log.Println("GetLimitKlineHistoryByTime fail")
+				log.Println(err)
 				return
 			}
 			for _, kline := range klines {
 				if kline.EndTime < beforeKlines[len(beforeKlines)-1].EndTime {
 					continue
 				}
-				simulationKlineCh <- kline
-				beforeKlines = append(beforeKlines, kline) // beforeKlines包含目前kline
-				s.HandleBackTestKline(simulationID, beforeKlines, kline)
+
+				fakeKlineHistory, err := indicator.GenFinalKlinePath(kline, b.klineHistoryPrecision)
+				if err != nil {
+					log.Println("GenFinalKlinePath fail")
+					log.Println(err)
+					return
+				}
+				for _, klineHistory := range fakeKlineHistory {
+					simulationKlineCh <- klineHistory
+					if klineHistory.IsFinal {
+						beforeKlines = append(beforeKlines, kline) // beforeKlines包含目前收盤kline
+					}
+					s.HandleBackTestKline(simulationID, beforeKlines, klineHistory)
+				}
 			}
 
 			startTimeMs = endTimeMs

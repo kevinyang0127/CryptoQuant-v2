@@ -16,6 +16,7 @@ func GetBacktestExports() map[string]lua.LGFunction {
 		"order":           backtestOrder,
 		"cancelAllOrders": backtestCancelAllOrder,
 		"getAllOrders":    backtestGetAllOrders,
+		"hasPosition":     backtestHasPosition,
 	}
 }
 
@@ -32,6 +33,8 @@ func backtestEntry(L *lua.LState) int {
 
 	side := L.CheckBool(1)
 	qty := L.CheckNumber(2)
+
+	log.Printf("open, side = %v, qty = %f", side, qty)
 
 	simulationID := L.GetGlobal("SimulationID").String()
 	nowPrice := L.GetGlobal("NowPrice").String()
@@ -54,6 +57,8 @@ func backtestExit(L *lua.LState) int {
 	}
 
 	qty := L.CheckNumber(1)
+
+	log.Printf("exit, qty = %f", qty)
 
 	simulationID := L.GetGlobal("SimulationID").String()
 	nowPrice := L.GetGlobal("NowPrice").String()
@@ -79,6 +84,8 @@ func backtestOrder(L *lua.LState) int {
 	price := L.CheckNumber(2)
 	qty := L.CheckNumber(3)
 
+	log.Printf("get new order, side = %v, prict = %f, qty = %f", side, price, qty)
+
 	simulationID := L.GetGlobal("SimulationID").String()
 	simulation.SimulationManager.Order(context.Background(), simulationID, side, price.String(), qty.String())
 
@@ -93,6 +100,8 @@ func backtestCancelAllOrder(L *lua.LState) int {
 
 	simulationID := L.GetGlobal("SimulationID").String()
 	simulation.SimulationManager.CloseAllOrder(context.Background(), simulationID)
+
+	log.Printf("cancel all order")
 
 	return 0
 }
@@ -121,6 +130,21 @@ func backtestGetAllOrders(L *lua.LState) int {
 
 	// TODO: 改成回傳整個list
 	L.Push(lua.LNumber(len(orders)))
+
+	return 1
+}
+
+/*
+cryptoquant.hasPosition() --目前是否還有倉位
+return bool
+*/
+func backtestHasPosition(L *lua.LState) int {
+
+	simulationID := L.GetGlobal("SimulationID").String()
+	position, _ := simulation.SimulationManager.GetPosition(context.Background(), simulationID)
+	hasPosition := position != nil
+
+	L.Push(lua.LBool(hasPosition))
 
 	return 1
 }

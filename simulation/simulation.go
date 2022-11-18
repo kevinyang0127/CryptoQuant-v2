@@ -80,7 +80,6 @@ func (s *Simulation) ListenNewKline(ctx context.Context, ch chan indicator.Kline
 	}
 }
 
-// fixme: 回測如果一根kline範圍太大，有可能同時吃到止損止盈單，order應該要做排斥？
 func (s *Simulation) checkOrderMatch(ctx context.Context, kline indicator.Kline) {
 	doneOrderIndexs := make(map[int]bool)
 	someOrderDone := false
@@ -274,4 +273,11 @@ func (s *Simulation) GetAllOrder(ctx context.Context) []*Order {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	return s.orders
+}
+
+// 取得目前倉位
+func (s *Simulation) GetPosition(ctx context.Context) *Position {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	return s.positon
 }
