@@ -78,7 +78,7 @@ func backtesting(c *gin.Context) {
 		Exchange              string `json:"exchange"`
 		Symbol                string `json:"symbol"`
 		Timeframe             string `json:"timeframe"`
-		KlineHistoryPrecision int    `json:"klineHistoryPrecision"`
+		KlineHistoryTimeframe string `json:"klineHistoryTimeframe"`
 		StrategyID            string `json:"strategyID"`
 		StartBalance          string `json:"startBalance"`
 		Lever                 int    `json:"lever"`
@@ -96,7 +96,7 @@ func backtesting(c *gin.Context) {
 	}
 
 	backtestingClient := quant.NewBackTestingClient(MongoDB, param.UserID, param.StrategyID, param.Exchange, param.Symbol,
-		param.Timeframe, param.KlineHistoryPrecision, param.StartBalance, param.Lever, param.TakerCommissionRate, param.MakerCommissionRate,
+		param.Timeframe, param.KlineHistoryTimeframe, param.StartBalance, param.Lever, param.TakerCommissionRate, param.MakerCommissionRate,
 		param.StartTimeMs, param.EndTimeMs)
 
 	simulationID, err := backtestingClient.Backtest(c)

@@ -18,7 +18,7 @@ type BacktestingClient struct {
 	exchange              string
 	symbol                string
 	timeframe             string
-	klineHistoryPrecision int
+	klineHistoryTimeframe string
 	startBalance          string
 	lever                 int
 	takerCommissionRate   string
@@ -29,7 +29,7 @@ type BacktestingClient struct {
 }
 
 func NewBackTestingClient(mongoDB *db.MongoDB, userID string, strategyID string, exchange string, symbol string,
-	timeframe string, klineHistoryPrecision int, startBalance string, lever int, takerCommissionRate string, makerCommissionRate string,
+	timeframe string, klineHistoryTimeframe string, startBalance string, lever int, takerCommissionRate string, makerCommissionRate string,
 	startTimeMs int64, endTimeMs int64) *BacktestingClient {
 	return &BacktestingClient{
 		userID:                userID,
@@ -37,7 +37,7 @@ func NewBackTestingClient(mongoDB *db.MongoDB, userID string, strategyID string,
 		exchange:              exchange,
 		symbol:                symbol,
 		timeframe:             timeframe,
-		klineHistoryPrecision: klineHistoryPrecision,
+		klineHistoryTimeframe: klineHistoryTimeframe,
 		startBalance:          startBalance,
 		lever:                 lever,
 		takerCommissionRate:   takerCommissionRate,
@@ -138,18 +138,27 @@ func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineC
 					continue
 				}
 
-				fakeKlineHistory, err := market.GenFinalKlinePath(kline, b.klineHistoryPrecision)
+				// 拿到此根k線的更小時間範圍的數據當作k線走過的歷史
+				smallTimeframeKlines, err := ex.GetLimitKlineHistoryByTime(ctx, b.symbol, b.klineHistoryTimeframe, maxKlineOnce, kline.StartTime, kline.EndTime)
 				if err != nil {
-					log.Println("GenFinalKlinePath fail")
+					log.Println("ex.GetLimitKlineHistoryByTime fail")
 					log.Println(err)
 					return
 				}
-				for _, klineHistory := range fakeKlineHistory {
-					simulationKlineCh <- klineHistory
-					if klineHistory.IsFinal {
+
+				klineHistory, err := market.GenFinalKlineHistory(kline, smallTimeframeKlines)
+				if err != nil {
+					log.Println("market.GenFinalKlineHistory fail")
+					log.Println(err)
+					return
+				}
+
+				for _, kh := range klineHistory {
+					simulationKlineCh <- kh
+					if kh.IsFinal {
 						beforeKlines = append(beforeKlines, kline) // beforeKlines包含目前收盤kline
 					}
-					s.HandleBackTestKline(simulationID, beforeKlines, klineHistory)
+					s.HandleBackTestKline(simulationID, beforeKlines, kh)
 				}
 				fmt.Println(kline)
 			}

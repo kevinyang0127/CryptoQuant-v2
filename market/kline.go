@@ -28,7 +28,7 @@ type Kline struct {
 [notFinalKline, notFinalKline, notFinalKline, ..., finalKline]
 precision決定在high和low之間要分成多少點位
 */
-func GenFinalKlinePath(finalKline Kline, precision int) ([]Kline, error) {
+func GenFakeFinalKlinePath(finalKline Kline, precision int) ([]Kline, error) {
 	if !finalKline.IsFinal {
 		return nil, fmt.Errorf("kline is not final")
 	}
@@ -109,4 +109,48 @@ func smoothPath(path []decimal.Decimal, d decimal.Decimal) []decimal.Decimal {
 		prev = path[i]
 	}
 	return path
+}
+
+// 輸入一根時間框架較高的k線 和 他的開始時間到結束時間內的小時間框架的k線序列，輸出高時間框架的k線變化序列
+func GenFinalKlineHistory(finalKline Kline, smallTimeframeKlines []Kline) ([]Kline, error) {
+	finalKlineHistory := []Kline{}
+	for i, sk := range smallTimeframeKlines {
+		if sk.StartTime < finalKline.StartTime || sk.EndTime > finalKline.EndTime {
+			return nil, fmt.Errorf("smallTimeframeKline's startTime or endTime out of finalKline")
+		}
+
+		if i == len(smallTimeframeKlines)-1 {
+			finalKlineHistory = append(finalKlineHistory, finalKline)
+			break
+		}
+
+		newKline := Kline{
+			StartTime:            finalKline.StartTime,
+			EndTime:              finalKline.EndTime,
+			Open:                 sk.Open,
+			Close:                sk.Close,
+			High:                 sk.High,
+			Low:                  sk.Low,
+			Volume:               sk.Volume,
+			QuoteVolume:          sk.QuoteVolume,
+			ActiveBuyVolume:      sk.ActiveBuyVolume,
+			ActiveBuyQuoteVolume: sk.ActiveBuyQuoteVolume,
+			IsFinal:              false,
+		}
+		if len(finalKlineHistory) > 0 {
+			newKline.Open = finalKlineHistory[i-1].Open
+			if finalKlineHistory[i-1].High.GreaterThan(newKline.High) {
+				newKline.High = finalKlineHistory[i-1].High
+			}
+			if finalKlineHistory[i-1].Low.LessThan(newKline.Low) {
+				newKline.Low = finalKlineHistory[i-1].Low
+			}
+			newKline.Volume = finalKlineHistory[i-1].Volume.Add(newKline.Volume)
+			newKline.QuoteVolume = finalKlineHistory[i-1].QuoteVolume.Add(newKline.QuoteVolume)
+			newKline.ActiveBuyVolume = finalKlineHistory[i-1].ActiveBuyVolume.Add(newKline.ActiveBuyVolume)
+			newKline.ActiveBuyQuoteVolume = finalKlineHistory[i-1].ActiveBuyQuoteVolume.Add(newKline.ActiveBuyQuoteVolume)
+		}
+		finalKlineHistory = append(finalKlineHistory, newKline)
+	}
+	return finalKlineHistory, nil
 }
