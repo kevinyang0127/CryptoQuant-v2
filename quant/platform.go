@@ -3,7 +3,7 @@ package quant
 import (
 	"CryptoQuant-v2/db"
 	"CryptoQuant-v2/exchange"
-	"CryptoQuant-v2/indicator"
+	"CryptoQuant-v2/market"
 	"CryptoQuant-v2/strategy"
 	"CryptoQuant-v2/stream"
 	"CryptoQuant-v2/util"
@@ -94,7 +94,7 @@ func (p *Platform) ListenNewKlineStream(ctx context.Context, exchange string, pa
 		return
 	}
 
-	ch := make(chan indicator.Kline)
+	ch := make(chan market.Kline)
 	err := stream.KlineStreamManager.Subscribe(ctx, param, p.platformID, ch)
 	if err != nil {
 		log.Println("KlineStreamManager.Subscribe fail")
@@ -123,7 +123,7 @@ func (p *Platform) ListenNewKlineStream(ctx context.Context, exchange string, pa
 
 			// 超過2000筆只保留最新500筆
 			if len(klines) >= 2000 {
-				newSlice := make([]indicator.Kline, 500, 2000)
+				newSlice := make([]market.Kline, 500, 2000)
 				copy(newSlice, klines[len(klines)-500:])
 				klines = newSlice
 			}
@@ -145,7 +145,7 @@ func (p *Platform) ListenNewKlineStream(ctx context.Context, exchange string, pa
 }
 
 // 取得最新的數根k線
-func (p *Platform) getLimitKlineHistory(ctx context.Context, exchangeName string, symbol string, timeframe string, limit int) ([]indicator.Kline, error) {
+func (p *Platform) getLimitKlineHistory(ctx context.Context, exchangeName string, symbol string, timeframe string, limit int) ([]market.Kline, error) {
 	ex, err := exchange.GetExchange(exchangeName)
 	if err != nil {
 		log.Println("GetExchange fail")

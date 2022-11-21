@@ -13,6 +13,7 @@ func GetBacktestExports() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"entry":           backtestEntry,
 		"exit":            backtestExit,
+		"exitAll":         backtestExitAll,
 		"order":           backtestOrder,
 		"cancelAllOrders": backtestCancelAllOrder,
 		"getAllOrders":    backtestGetAllOrders,
@@ -46,7 +47,7 @@ func backtestEntry(L *lua.LState) int {
 }
 
 /*
-cryptoquant.exit(qty, closeAll) --市價關倉
+cryptoquant.exit(qty) --市價關倉
 no return value
 */
 func backtestExit(L *lua.LState) int {
@@ -65,6 +66,23 @@ func backtestExit(L *lua.LState) int {
 	klineEndTimeS := L.GetGlobal("KlineEndTime").String()
 	klineEndTime, _ := strconv.ParseInt(klineEndTimeS, 10, 64)
 	simulation.SimulationManager.Exit(context.Background(), simulationID, nowPrice, qty.String(), false, klineEndTime)
+
+	return 0
+}
+
+/*
+cryptoquant.exitAll() --市價全部平倉
+no return value
+*/
+func backtestExitAll(L *lua.LState) int {
+
+	log.Printf("exit all position")
+
+	simulationID := L.GetGlobal("SimulationID").String()
+	nowPrice := L.GetGlobal("NowPrice").String()
+	klineEndTimeS := L.GetGlobal("KlineEndTime").String()
+	klineEndTime, _ := strconv.ParseInt(klineEndTimeS, 10, 64)
+	simulation.SimulationManager.ExitAll(context.Background(), simulationID, nowPrice, false, klineEndTime)
 
 	return 0
 }

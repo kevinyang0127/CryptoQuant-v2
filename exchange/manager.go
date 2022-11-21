@@ -1,7 +1,7 @@
 package exchange
 
 import (
-	"CryptoQuant-v2/indicator"
+	"CryptoQuant-v2/market"
 	"context"
 	"fmt"
 )
@@ -29,8 +29,8 @@ func GetExchangeName(exchangeName string) ExchangeName {
 }
 
 type Exchange interface {
-	GetLimitKlineHistory(ctx context.Context, symbol string, timeframe string, limit int) ([]indicator.Kline, error)
-	GetLimitKlineHistoryByTime(ctx context.Context, symbol string, timeframe string, limit int, startTimeMs int64, endTimeMs int64) ([]indicator.Kline, error)
+	GetLimitKlineHistory(ctx context.Context, symbol string, timeframe string, limit int) ([]market.Kline, error)
+	GetLimitKlineHistoryByTime(ctx context.Context, symbol string, timeframe string, limit int, startTimeMs int64, endTimeMs int64) ([]market.Kline, error)
 }
 
 func GetExchange(exchangeName string) (Exchange, error) {

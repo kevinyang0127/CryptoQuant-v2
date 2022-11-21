@@ -1,8 +1,8 @@
 package strategy
 
-import "CryptoQuant-v2/indicator"
+import "CryptoQuant-v2/market"
 
 type Strategy interface {
-	HandleKline(klines []indicator.Kline, kline indicator.Kline)
-	HandleBackTestKline(simulationID string, klines []indicator.Kline, kline indicator.Kline)
+	HandleKline(klines []market.Kline, kline market.Kline)
+	HandleBackTestKline(simulationID string, klines []market.Kline, kline market.Kline)
 }

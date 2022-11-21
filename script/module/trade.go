@@ -6,9 +6,11 @@ func GetTradeExports() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"entry":           entry,
 		"exit":            exit,
+		"exitAll":         exitAll,
 		"order":           order,
 		"cancelAllOrders": cancelAllOrder,
 		"getAllOrders":    getAllOrders,
+		"hasPosition":     hasPosition,
 	}
 }
 
@@ -17,6 +19,10 @@ func entry(L *lua.LState) int {
 }
 
 func exit(L *lua.LState) int {
+	return 0
+}
+
+func exitAll(L *lua.LState) int {
 	return 0
 }
 

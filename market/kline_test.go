@@ -1,4 +1,4 @@
-package indicator
+package market
 
 import (
 	"fmt"
@@ -11,8 +11,8 @@ func TestXxx(t *testing.T) {
 	kline := Kline{
 		High:    decimal.NewFromFloat(1000),
 		Low:     decimal.NewFromFloat(500),
-		Open:    decimal.NewFromFloat(800),
-		Close:   decimal.NewFromFloat(900),
+		Open:    decimal.NewFromFloat(900),
+		Close:   decimal.NewFromFloat(800),
 		IsFinal: true,
 	}
 	// GenFinalKlinePath(kline, 10)

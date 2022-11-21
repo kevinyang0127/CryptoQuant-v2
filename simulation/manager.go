@@ -2,7 +2,7 @@ package simulation
 
 import (
 	"CryptoQuant-v2/db"
-	"CryptoQuant-v2/indicator"
+	"CryptoQuant-v2/market"
 	"context"
 	"fmt"
 	"log"
@@ -32,7 +32,7 @@ func RunNewManager(mongoDB *db.MongoDB) *Manager {
 	return SimulationManager
 }
 
-func (m *Manager) StartNewSimulation(ctx context.Context, ch chan indicator.Kline, userID string, startBalance string,
+func (m *Manager) StartNewSimulation(ctx context.Context, ch chan market.Kline, userID string, startBalance string,
 	lever int64, takerCommissionRate string, makerCommissionRate string) (simulationID string, err error) {
 	startBalanceD, err := decimal.NewFromString(startBalance)
 	if err != nil {
@@ -120,6 +120,26 @@ func (m *Manager) Exit(ctx context.Context, simulationID string, price string, q
 		return fmt.Errorf("simulationMap can't find simulationID = %s", simulationID)
 	}
 	s.Exit(ctx, priceD, quantityD, isMaker, klineTimestamp)
+	return nil
+}
+
+func (m *Manager) ExitAll(ctx context.Context, simulationID string, price string, isMaker bool, klineTimestamp int64) error {
+	priceD, err := decimal.NewFromString(price)
+	if err != nil {
+		log.Println("decimal.NewFromString error")
+		return err
+	}
+
+	s, ok := m.simulationMap[simulationID]
+	if !ok {
+		return fmt.Errorf("simulationMap can't find simulationID = %s", simulationID)
+	}
+
+	p := s.GetPosition(ctx)
+	if p != nil {
+		s.Exit(ctx, priceD, p.Quantity.Abs(), isMaker, klineTimestamp)
+	}
+
 	return nil
 }
 

@@ -1,7 +1,7 @@
 package script
 
 import (
-	"CryptoQuant-v2/indicator"
+	"CryptoQuant-v2/market"
 	"CryptoQuant-v2/script/module"
 	"fmt"
 	"log"
@@ -171,7 +171,7 @@ func (h *luaScriptHandler) genLuaScriptModuleFunc(funcName string, scriptHashKey
 	}
 }
 
-func (h *luaScriptHandler) RunBacktestHandleKline(strategyID string, userID string, simulationID string, script string, kls []indicator.Kline, kl indicator.Kline) error {
+func (h *luaScriptHandler) RunBacktestHandleKline(strategyID string, userID string, simulationID string, script string, kls []market.Kline, kl market.Kline) error {
 	L := h.backtestStatePool.get()
 	defer h.backtestStatePool.put(L)
 
@@ -202,7 +202,7 @@ func (h *luaScriptHandler) RunBacktestHandleKline(strategyID string, userID stri
 	return nil
 }
 
-func (h *luaScriptHandler) toLuaScriptKlineData(kls []indicator.Kline, kl indicator.Kline) (LKlines *lua.LTable, LKline *lua.LTable) {
+func (h *luaScriptHandler) toLuaScriptKlineData(kls []market.Kline, kl market.Kline) (LKlines *lua.LTable, LKline *lua.LTable) {
 	LKlines = &lua.LTable{}
 	LKline = &lua.LTable{}
 	for i, k := range kls {

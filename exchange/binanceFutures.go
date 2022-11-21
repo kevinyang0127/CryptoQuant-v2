@@ -1,7 +1,7 @@
 package exchange
 
 import (
-	"CryptoQuant-v2/indicator"
+	"CryptoQuant-v2/market"
 	"context"
 	"log"
 
@@ -15,7 +15,7 @@ func newBinanceFuture() *BinanceFuture {
 	return &BinanceFuture{}
 }
 
-func (bf *BinanceFuture) GetLimitKlineHistory(ctx context.Context, symbol string, timeframe string, limit int) ([]indicator.Kline, error) {
+func (bf *BinanceFuture) GetLimitKlineHistory(ctx context.Context, symbol string, timeframe string, limit int) ([]market.Kline, error) {
 	c := binanceFutures.NewClient(roApiKey, roSecretKey)
 	klinesService := c.NewKlinesService()
 	klinesService.Symbol(symbol)
@@ -27,16 +27,16 @@ func (bf *BinanceFuture) GetLimitKlineHistory(ctx context.Context, symbol string
 		return nil, err
 	}
 
-	klines := []indicator.Kline{}
+	klines := []market.Kline{}
 	for i, k := range res {
 		if i == len(res)-1 {
 			//檔下尚未收盤的k線也會拿到，所以最後一根k線不做事，因為高機率初始化時不會剛好收盤
 			break
 		}
 
-		kline, err := indicator.BinanceFKlineToKline(k)
+		kline, err := market.BinanceFKlineToKline(k)
 		if err != nil {
-			log.Println("indicator.BinanceFKlineToKline fail")
+			log.Println("market.BinanceFKlineToKline fail")
 			return nil, err
 		}
 
@@ -46,7 +46,7 @@ func (bf *BinanceFuture) GetLimitKlineHistory(ctx context.Context, symbol string
 	return klines, nil
 }
 
-func (bf *BinanceFuture) GetLimitKlineHistoryByTime(ctx context.Context, symbol string, timeframe string, limit int, startTimeMs int64, endTimeMs int64) ([]indicator.Kline, error) {
+func (bf *BinanceFuture) GetLimitKlineHistoryByTime(ctx context.Context, symbol string, timeframe string, limit int, startTimeMs int64, endTimeMs int64) ([]market.Kline, error) {
 	c := binanceFutures.NewClient(roApiKey, roSecretKey)
 	klinesService := c.NewKlinesService()
 	klinesService.Symbol(symbol)
@@ -60,16 +60,16 @@ func (bf *BinanceFuture) GetLimitKlineHistoryByTime(ctx context.Context, symbol 
 		return nil, err
 	}
 
-	klines := []indicator.Kline{}
+	klines := []market.Kline{}
 	for i, k := range res {
 		if i == len(res)-1 {
 			//檔下尚未收盤的k線也會拿到，所以最後一根k線不做事，因為高機率初始化時不會剛好收盤
 			break
 		}
 
-		kline, err := indicator.BinanceFKlineToKline(k)
+		kline, err := market.BinanceFKlineToKline(k)
 		if err != nil {
-			log.Println("indicator.BinanceFKlineToKline fail")
+			log.Println("market.BinanceFKlineToKline fail")
 			return nil, err
 		}
 

@@ -3,7 +3,7 @@ package quant
 import (
 	"CryptoQuant-v2/db"
 	"CryptoQuant-v2/exchange"
-	"CryptoQuant-v2/indicator"
+	"CryptoQuant-v2/market"
 	"CryptoQuant-v2/simulation"
 	"CryptoQuant-v2/strategy"
 	"context"
@@ -54,7 +54,7 @@ func (b *BacktestingClient) Backtest(ctx context.Context) (simulationID string, 
 		return "", fmt.Errorf("startTimeMs >= endTimeMs")
 	}
 
-	simulationKlineCh := make(chan indicator.Kline)
+	simulationKlineCh := make(chan market.Kline)
 	simulationID, err = simulation.SimulationManager.StartNewSimulation(ctx, simulationKlineCh, b.userID,
 		b.startBalance, int64(b.lever), b.takerCommissionRate, b.makerCommissionRate)
 	if err != nil {
@@ -77,7 +77,7 @@ func (b *BacktestingClient) Backtest(ctx context.Context) (simulationID string, 
 	return simulationID, nil
 }
 
-func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineCh chan indicator.Kline, simulationID string, s strategy.Strategy) error {
+func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineCh chan market.Kline, simulationID string, s strategy.Strategy) error {
 	ex, err := exchange.GetExchange(b.exchange)
 	if err != nil {
 		log.Println("GetExchange fail")
@@ -114,7 +114,7 @@ func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineC
 
 			// 超過2000筆只保留最新500筆
 			if len(beforeKlines) >= 2000 {
-				newSlice := make([]indicator.Kline, 500, 2000)
+				newSlice := make([]market.Kline, 500, 2000)
 				copy(newSlice, beforeKlines[len(beforeKlines)-500:])
 				beforeKlines = newSlice
 			}
@@ -138,7 +138,7 @@ func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineC
 					continue
 				}
 
-				fakeKlineHistory, err := indicator.GenFinalKlinePath(kline, b.klineHistoryPrecision)
+				fakeKlineHistory, err := market.GenFinalKlinePath(kline, b.klineHistoryPrecision)
 				if err != nil {
 					log.Println("GenFinalKlinePath fail")
 					log.Println(err)
@@ -151,6 +151,7 @@ func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineC
 					}
 					s.HandleBackTestKline(simulationID, beforeKlines, klineHistory)
 				}
+				fmt.Println(kline)
 			}
 
 			startTimeMs = endTimeMs

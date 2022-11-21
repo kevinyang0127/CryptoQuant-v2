@@ -1,7 +1,7 @@
 package stream
 
 import (
-	"CryptoQuant-v2/indicator"
+	"CryptoQuant-v2/market"
 	"context"
 	"fmt"
 	"log"
@@ -44,7 +44,7 @@ func GenKlineStreamKey(param KlineStreamParam) string {
 
 type KlineStreamSubscriber struct {
 	SubscriberID string
-	SubscriberCh chan<- indicator.Kline
+	SubscriberCh chan<- market.Kline
 }
 
 // kline stream manager
@@ -72,7 +72,7 @@ func (m *Manager) createStream(ctx context.Context, param KlineStreamParam) (Str
 	return newStream, nil
 }
 
-func (m *Manager) klineHandler(streamKey string, kline indicator.Kline) {
+func (m *Manager) klineHandler(streamKey string, kline market.Kline) {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 
@@ -86,7 +86,7 @@ func (m *Manager) klineHandler(streamKey string, kline indicator.Kline) {
 	}
 }
 
-func (m *Manager) Subscribe(ctx context.Context, param KlineStreamParam, subscriberID string, subscriberCh chan<- indicator.Kline) error {
+func (m *Manager) Subscribe(ctx context.Context, param KlineStreamParam, subscriberID string, subscriberCh chan<- market.Kline) error {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 

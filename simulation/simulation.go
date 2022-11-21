@@ -2,7 +2,7 @@ package simulation
 
 import (
 	"CryptoQuant-v2/db"
-	"CryptoQuant-v2/indicator"
+	"CryptoQuant-v2/market"
 	"CryptoQuant-v2/util"
 	"context"
 	"log"
@@ -67,7 +67,7 @@ func NewSimulation(mongoDB *db.MongoDB, userID string, startBalance decimal.Deci
 }
 
 // 監聽新的kline，處理掛單成交與否
-func (s *Simulation) ListenNewKline(ctx context.Context, ch chan indicator.Kline) {
+func (s *Simulation) ListenNewKline(ctx context.Context, ch chan market.Kline) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -80,7 +80,7 @@ func (s *Simulation) ListenNewKline(ctx context.Context, ch chan indicator.Kline
 	}
 }
 
-func (s *Simulation) checkOrderMatch(ctx context.Context, kline indicator.Kline) {
+func (s *Simulation) checkOrderMatch(ctx context.Context, kline market.Kline) {
 	doneOrderIndexs := make(map[int]bool)
 	someOrderDone := false
 	for i, order := range s.orders {

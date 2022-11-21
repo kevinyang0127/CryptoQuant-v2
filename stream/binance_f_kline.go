@@ -6,7 +6,7 @@ package stream
 */
 
 import (
-	"CryptoQuant-v2/indicator"
+	"CryptoQuant-v2/market"
 	"context"
 	"log"
 
@@ -23,11 +23,11 @@ type BinanceFKline struct {
 	Param KlineStreamParam
 }
 
-func (s *BinanceFKline) wsConnect(ctx context.Context, klineHandler func(streamKey string, kline indicator.Kline)) error {
+func (s *BinanceFKline) wsConnect(ctx context.Context, klineHandler func(streamKey string, kline market.Kline)) error {
 	wsKlineHandler := func(event *binanceFutures.WsKlineEvent) {
-		kline, err := indicator.BinanceFKlineEventToKline(*event)
+		kline, err := market.BinanceFKlineEventToKline(*event)
 		if err != nil {
-			log.Println("indicator.BinanceFKlineEventToKline fail")
+			log.Println("market.BinanceFKlineEventToKline fail")
 			return
 		}
 		key := GenKlineStreamKey(s.Param)
