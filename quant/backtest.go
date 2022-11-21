@@ -100,17 +100,16 @@ func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineC
 		// 總共需要多少根k線資料
 		count := durationMs / unitTime.Milliseconds()
 
-		sleepCount := 0
 		startTimeMs := int64(0)
 		endTimeMs := int64(0)
 		maxKlineOnce := 1000
-		//每次回測1000筆k線，每2萬筆休息30秒
+		apiRequestTimes := 0
+		//每次回測1000筆k線
 		for i := 0; i < int(count); i += maxKlineOnce {
-			if sleepCount >= 20 {
-				time.Sleep(30 * time.Second)
-				sleepCount = 0
+			if apiRequestTimes >= 1000 {
+				time.Sleep(55 * time.Second)
+				apiRequestTimes = 0
 			}
-			sleepCount++
 
 			// 超過2000筆只保留最新500筆
 			if len(beforeKlines) >= 2000 {
@@ -133,6 +132,8 @@ func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineC
 				log.Println(err)
 				return
 			}
+			apiRequestTimes++
+
 			for _, kline := range klines {
 				if kline.EndTime < beforeKlines[len(beforeKlines)-1].EndTime {
 					continue
@@ -145,6 +146,7 @@ func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineC
 					log.Println(err)
 					return
 				}
+				apiRequestTimes++
 
 				klineHistory, err := market.GenFinalKlineHistory(kline, smallTimeframeKlines)
 				if err != nil {
