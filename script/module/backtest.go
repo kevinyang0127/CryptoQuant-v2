@@ -35,8 +35,6 @@ func backtestEntry(L *lua.LState) int {
 	side := L.CheckBool(1)
 	qty := L.CheckNumber(2)
 
-	log.Printf("open, side = %v, qty = %f", side, qty)
-
 	simulationID := L.GetGlobal("SimulationID").String()
 	nowPrice := L.GetGlobal("NowPrice").String()
 	klineEndTimeS := L.GetGlobal("KlineEndTime").String()

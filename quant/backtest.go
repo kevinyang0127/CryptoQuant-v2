@@ -6,6 +6,7 @@ import (
 	"CryptoQuant-v2/market"
 	"CryptoQuant-v2/simulation"
 	"CryptoQuant-v2/strategy"
+	"CryptoQuant-v2/user"
 	"context"
 	"fmt"
 	"log"
@@ -15,7 +16,7 @@ import (
 type BacktestingClient struct {
 	userID                string
 	strategyID            string
-	exchange              string
+	exchangeName          string
 	symbol                string
 	timeframe             string
 	klineHistoryTimeframe string
@@ -26,15 +27,20 @@ type BacktestingClient struct {
 	startTimeMs           int64
 	endTimeMs             int64
 	strategyManager       *strategy.Manager
+	exchangeManager       *exchange.Manager
+	userManager           *user.Manager
 }
 
-func NewBackTestingClient(mongoDB *db.MongoDB, userID string, strategyID string, exchange string, symbol string,
+func NewBackTestingClient(mongoDB *db.MongoDB, userID string, strategyID string, exchangeName string, symbol string,
 	timeframe string, klineHistoryTimeframe string, startBalance string, lever int, takerCommissionRate string, makerCommissionRate string,
 	startTimeMs int64, endTimeMs int64) *BacktestingClient {
+
+	userManager := user.NewUserManager(mongoDB)
+
 	return &BacktestingClient{
 		userID:                userID,
 		strategyID:            strategyID,
-		exchange:              exchange,
+		exchangeName:          exchangeName,
 		symbol:                symbol,
 		timeframe:             timeframe,
 		klineHistoryTimeframe: klineHistoryTimeframe,
@@ -45,6 +51,8 @@ func NewBackTestingClient(mongoDB *db.MongoDB, userID string, strategyID string,
 		startTimeMs:           startTimeMs,
 		endTimeMs:             endTimeMs,
 		strategyManager:       strategy.NewManager(mongoDB),
+		exchangeManager:       exchange.NewExchangeManager(userManager),
+		userManager:           userManager,
 	}
 }
 
@@ -78,7 +86,7 @@ func (b *BacktestingClient) Backtest(ctx context.Context) (simulationID string, 
 }
 
 func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineCh chan market.Kline, simulationID string, s strategy.Strategy) error {
-	ex, err := exchange.GetExchange(b.exchange)
+	ex, err := b.exchangeManager.GetExchange(ctx, b.exchangeName, b.userID)
 	if err != nil {
 		log.Println("GetExchange fail")
 		return err

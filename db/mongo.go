@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -116,4 +117,20 @@ func (mgo *MongoDB) Find(ctx context.Context, databaseName string, collectionNam
 	}
 
 	return results, nil
+}
+
+// no matched will return error
+func (mgo *MongoDB) UpdateOne(ctx context.Context, databaseName string, collectionName string, filter bson.D, update bson.D) error {
+	collection := mgo.client.Database(databaseName).Collection(collectionName)
+
+	result, err := collection.UpdateOne(ctx, filter, bson.D{{"$set", update}})
+	if err != nil {
+		log.Println("collection.UpdateOne fail")
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("collection.UpdateOne no matched")
+	}
+
+	return nil
 }

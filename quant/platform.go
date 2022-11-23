@@ -6,6 +6,7 @@ import (
 	"CryptoQuant-v2/market"
 	"CryptoQuant-v2/strategy"
 	"CryptoQuant-v2/stream"
+	"CryptoQuant-v2/user"
 	"CryptoQuant-v2/util"
 	"context"
 	"fmt"
@@ -23,14 +24,19 @@ type Platform struct {
 	mux             sync.Mutex
 	platformID      string
 	strategyManager *strategy.Manager
+	exchangeManager *exchange.Manager
+	userManager     *user.Manager
 	runningStream   map[string]bool     //key: streamKey
 	liveStrategyID  map[string][]string // key: streamKey, value: strategyID list
 }
 
 func NewPlatform(mongoDB *db.MongoDB) *Platform {
+	userManager := user.NewUserManager(mongoDB)
 	return &Platform{
 		platformID:      util.GenIDWithPrefix("P_", 5),
 		strategyManager: strategy.NewManager(mongoDB),
+		exchangeManager: exchange.NewExchangeManager(userManager),
+		userManager:     userManager,
 		runningStream:   make(map[string]bool),
 		liveStrategyID:  make(map[string][]string),
 	}
@@ -146,7 +152,7 @@ func (p *Platform) ListenNewKlineStream(ctx context.Context, exchange string, pa
 
 // 取得最新的數根k線
 func (p *Platform) getLimitKlineHistory(ctx context.Context, exchangeName string, symbol string, timeframe string, limit int) ([]market.Kline, error) {
-	ex, err := exchange.GetExchange(exchangeName)
+	ex, err := p.exchangeManager.GetExchange(ctx, exchangeName, p.userManager.GetAdminUserID())
 	if err != nil {
 		log.Println("GetExchange fail")
 		return nil, err

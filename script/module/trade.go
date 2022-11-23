@@ -1,6 +1,10 @@
 package module
 
-import lua "github.com/yuin/gopher-lua"
+import (
+	"log"
+
+	lua "github.com/yuin/gopher-lua"
+)
 
 func GetTradeExports() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
@@ -11,10 +15,24 @@ func GetTradeExports() map[string]lua.LGFunction {
 		"cancelAllOrders": cancelAllOrder,
 		"getAllOrders":    getAllOrders,
 		"hasPosition":     hasPosition,
+		"getBalance":      unsupport,
 	}
 }
 
+/*
+cryptoquant.entry(side, qty) --市價開倉
+no return value
+*/
 func entry(L *lua.LState) int {
+	paramCount := L.GetTop()
+	if paramCount != 2 {
+		log.Println("backtestEntry paramCount != 2")
+		return 0
+	}
+
+	// side := L.CheckBool(1)
+	// qty := L.CheckNumber(2)
+
 	return 0
 }
 
@@ -49,5 +67,9 @@ return bool
 */
 func hasPosition(L *lua.LState) int {
 
+	return 0
+}
+
+func unsupport(L *lua.LState) int {
 	return 0
 }

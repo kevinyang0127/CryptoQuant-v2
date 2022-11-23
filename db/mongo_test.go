@@ -48,7 +48,22 @@ func TestMongo(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	log.Println("result: ", result)
+	log.Println("before update result: ", result)
+
+	err = mongoDB.UpdateOne(ctx, "cryptoQuantDB", "test", bson.D{{"botID", "1234"}}, bson.D{{"balance", 90.0}})
+	if err != nil {
+		log.Println(err)
+		t.Error(err)
+		return
+	}
+
+	err = mongoDB.FindOne(ctx, "cryptoQuantDB", "test", bson.D{{"botID", "1234"}}, result)
+	if err != nil {
+		log.Println(err)
+		t.Error(err)
+		return
+	}
+	log.Println("update result: ", result)
 
 	// r2, err := mongoDB.Find(ctx, "cryptoQuantDB", "test", bson.D{{"botID", "1234"}})
 	// if err != nil {
