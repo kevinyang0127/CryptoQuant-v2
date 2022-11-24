@@ -29,13 +29,13 @@ type BacktestingClient struct {
 	strategyManager       *strategy.Manager
 	exchangeManager       *exchange.Manager
 	userManager           *user.Manager
+	simulationManager     *simulation.Manager
 }
 
-func NewBackTestingClient(mongoDB *db.MongoDB, userID string, strategyID string, exchangeName string, symbol string,
+func NewBackTestingClient(mongoDB *db.MongoDB, strategyManager *strategy.Manager, exchangeManager *exchange.Manager,
+	userManager *user.Manager, simulationManager *simulation.Manager, userID string, strategyID string, exchangeName string, symbol string,
 	timeframe string, klineHistoryTimeframe string, startBalance string, lever int, takerCommissionRate string, makerCommissionRate string,
 	startTimeMs int64, endTimeMs int64) *BacktestingClient {
-
-	userManager := user.NewUserManager(mongoDB)
 
 	return &BacktestingClient{
 		userID:                userID,
@@ -50,9 +50,10 @@ func NewBackTestingClient(mongoDB *db.MongoDB, userID string, strategyID string,
 		makerCommissionRate:   makerCommissionRate,
 		startTimeMs:           startTimeMs,
 		endTimeMs:             endTimeMs,
-		strategyManager:       strategy.NewManager(mongoDB),
-		exchangeManager:       exchange.NewExchangeManager(userManager),
+		strategyManager:       strategyManager,
+		exchangeManager:       exchangeManager,
 		userManager:           userManager,
+		simulationManager:     simulationManager,
 	}
 }
 
@@ -63,7 +64,7 @@ func (b *BacktestingClient) Backtest(ctx context.Context) (simulationID string, 
 	}
 
 	simulationKlineCh := make(chan market.Kline)
-	simulationID, err = simulation.SimulationManager.StartNewSimulation(ctx, simulationKlineCh, b.userID,
+	simulationID, err = b.simulationManager.StartNewSimulation(ctx, simulationKlineCh, b.userID,
 		b.startBalance, int64(b.lever), b.takerCommissionRate, b.makerCommissionRate)
 	if err != nil {
 		log.Println("SimulationManager.StartNewSimulation fail")
@@ -176,7 +177,7 @@ func (b *BacktestingClient) runBacktesting(ctx context.Context, simulationKlineC
 			startTimeMs = endTimeMs
 		}
 
-		simulation.SimulationManager.StopSimulation(ctx, simulationID)
+		b.simulationManager.StopSimulation(ctx, simulationID)
 	}()
 
 	return nil

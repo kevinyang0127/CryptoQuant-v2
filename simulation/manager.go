@@ -10,26 +10,18 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var SimulationManager *Manager
-
 type Manager struct {
 	mongoDB             *db.MongoDB
 	simulationMap       map[string]*Simulation
 	cancelSimulationMap map[string]context.CancelFunc
 }
 
-func RunNewManager(mongoDB *db.MongoDB) *Manager {
-	if SimulationManager != nil {
-		return SimulationManager
-	}
-
-	SimulationManager = &Manager{
+func NewSimulationManager(mongoDB *db.MongoDB) *Manager {
+	return &Manager{
 		mongoDB:             mongoDB,
 		simulationMap:       make(map[string]*Simulation),
 		cancelSimulationMap: make(map[string]context.CancelFunc),
 	}
-
-	return SimulationManager
 }
 
 func (m *Manager) StartNewSimulation(ctx context.Context, ch chan market.Kline, userID string, startBalance string,

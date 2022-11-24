@@ -11,20 +11,25 @@ import (
 )
 
 const (
-	DBNAME   = "cryptoQuantV2"
-	URI      = "mongodb://kevin:123@mongodb:27017/?connect=direct"
-	LocalURI = "mongodb://kevin:123@127.0.0.1:27017/?connect=direct"
+	DBNAME = "cryptoQuantV2"
+)
+
+type DBURI string
+
+const (
+	URI      DBURI = "mongodb://kevin:123@mongodb:27017/?connect=direct"
+	LocalURI DBURI = "mongodb://kevin:123@127.0.0.1:27017/?connect=direct"
 )
 
 type MongoDB struct {
 	client *mongo.Client
 }
 
-func NewMongoDB(uri string) (db *MongoDB, disconnect func(), err error) {
+func NewMongoDB(uri DBURI) (db *MongoDB, disconnect func(), err error) {
 	ctx := context.Background()
 	serverAPIOptions := options.ServerAPI(options.ServerAPIVersion1)
 	log.Println("uri: ", uri)
-	clientOptions := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPIOptions)
+	clientOptions := options.Client().ApplyURI(string(uri)).SetServerAPIOptions(serverAPIOptions)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		log.Println("mongo.Connect fail")

@@ -1,7 +1,6 @@
 package quant
 
 import (
-	"CryptoQuant-v2/db"
 	"CryptoQuant-v2/exchange"
 	"CryptoQuant-v2/market"
 	"CryptoQuant-v2/strategy"
@@ -30,12 +29,11 @@ type Platform struct {
 	liveStrategyID  map[string][]string // key: streamKey, value: strategyID list
 }
 
-func NewPlatform(mongoDB *db.MongoDB) *Platform {
-	userManager := user.NewUserManager(mongoDB)
+func NewPlatform(strategyManager *strategy.Manager, exchangeManager *exchange.Manager, userManager *user.Manager) *Platform {
 	return &Platform{
 		platformID:      util.GenIDWithPrefix("P_", 5),
-		strategyManager: strategy.NewManager(mongoDB),
-		exchangeManager: exchange.NewExchangeManager(userManager),
+		strategyManager: strategyManager,
+		exchangeManager: exchangeManager,
 		userManager:     userManager,
 		runningStream:   make(map[string]bool),
 		liveStrategyID:  make(map[string][]string),

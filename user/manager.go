@@ -71,5 +71,5 @@ func (m *Manager) UpsertBinanceKeys(ctx context.Context, userID string, apiKey s
 }
 
 func (m *Manager) GetAdminUserID() string {
-	return "ADMIN_001"
+	return "ADMIN_USER"
 }

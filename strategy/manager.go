@@ -2,6 +2,7 @@ package strategy
 
 import (
 	"CryptoQuant-v2/db"
+	"CryptoQuant-v2/script"
 	"CryptoQuant-v2/util"
 	"context"
 	"log"
@@ -30,14 +31,16 @@ type StrategyInfo struct {
 }
 
 type Manager struct {
-	mongoDB     *db.MongoDB
-	strategyMap map[string]Strategy // key: strategyID
+	mongoDB          *db.MongoDB
+	strategyMap      map[string]Strategy // key: strategyID
+	luaScriptHandler *script.LuaScriptHandler
 }
 
-func NewManager(mongoDB *db.MongoDB) *Manager {
+func NewManager(mongoDB *db.MongoDB, luaScriptHandler *script.LuaScriptHandler) *Manager {
 	return &Manager{
-		mongoDB:     mongoDB,
-		strategyMap: make(map[string]Strategy),
+		mongoDB:          mongoDB,
+		strategyMap:      make(map[string]Strategy),
+		luaScriptHandler: luaScriptHandler,
 	}
 }
 
@@ -91,7 +94,7 @@ func (m *Manager) GetStrategyByID(ctx context.Context, strategyID string) (Strat
 }
 
 func (m *Manager) getDefaultStrategy(strategyID string, userID string, script string) Strategy {
-	return NewLuaScriptStrategy(strategyID, userID, script)
+	return NewLuaScriptStrategy(m.luaScriptHandler, strategyID, userID, script)
 }
 
 func (m *Manager) GetStrategyByUserIDAndName(ctx context.Context, userID string, Name string) (Strategy, error) {
