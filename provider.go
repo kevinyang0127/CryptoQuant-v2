@@ -49,6 +49,6 @@ func provideSimulationManager(mongoDB *db.MongoDB) *simulation.Manager {
 	return simulation.NewSimulationManager(mongoDB)
 }
 
-func provideLuaScriptHandler(simulationManager *simulation.Manager) *script.LuaScriptHandler {
-	return script.NewLuaScriptHandler(simulationManager)
+func provideLuaScriptHandler(exchangeManager *exchange.Manager, simulationManager *simulation.Manager) *script.LuaScriptHandler {
+	return script.NewLuaScriptHandler(exchangeManager, simulationManager)
 }

@@ -1,12 +1,12 @@
 package script
 
 import (
+	"CryptoQuant-v2/exchange"
 	"CryptoQuant-v2/market"
 	"CryptoQuant-v2/script/module"
 	"CryptoQuant-v2/simulation"
 	"fmt"
 	"log"
-	"math/rand"
 	"strconv"
 
 	lua "github.com/yuin/gopher-lua"
@@ -20,7 +20,7 @@ type LuaScriptHandler struct {
 	backtestModuleManager *moduleManager
 }
 
-func NewLuaScriptHandler(simulationManager *simulation.Manager) *LuaScriptHandler {
+func NewLuaScriptHandler(exchangeManager *exchange.Manager, simulationManager *simulation.Manager) *LuaScriptHandler {
 	handler := &LuaScriptHandler{
 		precompileManager: newLuaPrecompileManager(),
 
@@ -37,7 +37,7 @@ func NewLuaScriptHandler(simulationManager *simulation.Manager) *LuaScriptHandle
 		backtestModuleManager: newModuleManager(),
 	}
 
-	for k, v := range module.GetTradeExports() {
+	for k, v := range module.GetTradeExports(exchangeManager) {
 		handler.moduleManager.addNewExport(k, v)
 	}
 
@@ -89,34 +89,26 @@ func NewLuaScriptHandler(simulationManager *simulation.Manager) *LuaScriptHandle
 	return handler
 }
 
-func (h *LuaScriptHandler) RunScriptHandleKline(script string) error {
+func (h *LuaScriptHandler) RunScriptHandleKline(exchangeName string, userID string, symbol string, script string, kls []market.Kline, kl market.Kline) error {
 	L := h.statePool.get()
 	defer h.statePool.put(L)
+
+	L.SetGlobal("ExchangeName", lua.LString(exchangeName))
+	L.SetGlobal("UserID", lua.LString(userID))
+	L.SetGlobal("Symbol", lua.LString(symbol))
 
 	if err := h.precompileManager.doScript(L, script); err != nil {
 		fmt.Println("L.DoString fail")
 		return err
 	}
 
-	L.SetGlobal("NowPrice", lua.LString("nowwwwprice"))
-
-	klines := &lua.LTable{}
-	kline := &lua.LTable{}
-	for i := 0; i < 100; i++ {
-		kline = &lua.LTable{}
-		kline.RawSet(lua.LString("open"), lua.LNumber(1300.29+rand.Float64()))
-		kline.RawSet(lua.LString("close"), lua.LNumber(1308.73+rand.Float64()))
-		kline.RawSet(lua.LString("high"), lua.LNumber(1355.42+rand.Float64()))
-		kline.RawSet(lua.LString("low"), lua.LNumber(1290.14+rand.Float64()))
-		kline.RawSet(lua.LString("isFinal"), lua.LBool(true))
-		klines.RawSetInt(i+1, kline)
-	}
+	lKlines, lKline := h.toLuaScriptKlineData(kls, kl)
 
 	err := L.CallByParam(lua.P{
 		Fn:      L.GetGlobal("HandleKline"), // 呼叫HandleKline函數
 		NRet:    0,                          // 指定返回值數量
 		Protect: true,                       // 如果出現異常，是panic還是返回err
-	}, klines, kline) // 傳遞輸入參數
+	}, lKlines, lKline) // 傳遞輸入參數
 	if err != nil {
 		log.Println("L.CallByParam fail")
 		log.Println(err)

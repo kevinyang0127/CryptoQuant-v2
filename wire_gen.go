@@ -14,13 +14,13 @@ func InitTradingQueen() (*TradingQueen, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	manager := provideSimulationManager(mongoDB)
-	luaScriptHandler := provideLuaScriptHandler(manager)
+	manager := provideUserManager(mongoDB)
+	exchangeManager := provideExchangeManager(manager)
+	simulationManager := provideSimulationManager(mongoDB)
+	luaScriptHandler := provideLuaScriptHandler(exchangeManager, simulationManager)
 	strategyManager := provideStrategyManager(mongoDB, luaScriptHandler)
-	userManager := provideUserManager(mongoDB)
-	exchangeManager := provideExchangeManager(userManager)
-	platform := providePlatform(strategyManager, exchangeManager, userManager)
-	router := provideRouter(mongoDB, platform, strategyManager, exchangeManager, userManager, manager)
+	platform := providePlatform(strategyManager, exchangeManager, manager)
+	router := provideRouter(mongoDB, platform, strategyManager, exchangeManager, manager, simulationManager)
 	tradingQueen := NewTradingQueen(router)
 	return tradingQueen, func() {
 		cleanup()

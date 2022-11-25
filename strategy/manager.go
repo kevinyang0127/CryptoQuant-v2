@@ -85,7 +85,7 @@ func (m *Manager) GetStrategyByID(ctx context.Context, strategyID string) (Strat
 		return nil, err
 	}
 
-	s = m.getDefaultStrategy(info.StrategyID, info.UserID, info.Script)
+	s = m.getDefaultStrategy(info)
 
 	// save in cache
 	m.strategyMap[strategyID] = s
@@ -93,8 +93,8 @@ func (m *Manager) GetStrategyByID(ctx context.Context, strategyID string) (Strat
 	return s, nil
 }
 
-func (m *Manager) getDefaultStrategy(strategyID string, userID string, script string) Strategy {
-	return NewLuaScriptStrategy(m.luaScriptHandler, strategyID, userID, script)
+func (m *Manager) getDefaultStrategy(strategyInfo *StrategyInfo) Strategy {
+	return NewLuaScriptStrategy(m.luaScriptHandler, strategyInfo)
 }
 
 func (m *Manager) GetStrategyByUserIDAndName(ctx context.Context, userID string, Name string) (Strategy, error) {
@@ -121,12 +121,13 @@ func (m *Manager) GetStrategyInfo(ctx context.Context, strategyID string) (*Stra
 	return info, nil
 }
 
-func (m *Manager) Run() {
-	// TODO update status to Live
-}
-
-func (m *Manager) Stop() {
-	// TODO update status to Stop
+func (m *Manager) UpdateStatus(ctx context.Context, strategyID string, status StrategyStatus) error {
+	err := m.mongoDB.UpdateOne(ctx, "cryptoQuantV2", "strategy", bson.D{{"strategyID", strategyID}}, bson.D{{"status", status}})
+	if err != nil {
+		log.Println("mongoDB.UpdateOne fail")
+		return err
+	}
+	return nil
 }
 
 func (m *Manager) Remove() {

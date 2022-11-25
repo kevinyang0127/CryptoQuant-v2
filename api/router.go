@@ -31,7 +31,10 @@ func NewRouter(mongoDB *db.MongoDB, platform *quant.Platform, strategyManager *s
 	})
 	r.POST("/register", getRegisterHandler(userManager))
 	r.POST("/binancefuture/key", getUpsertBinanceKeyHandler(userManager))
-	r.POST("/strategy", getAddStrategyHandler(platform))
+	// r.GET("/strategy", getAddStrategyHandler(platform))
+	r.POST("/strategy", getAddStrategyHandler(strategyManager))
+	r.POST("/strategy/live", getRunStrategyHandler(platform))
+	// r.POST("/strategy/stop", getAddStrategyHandler(platform))
 	r.POST("/backtesting", getBacktestingHandler(mongoDB, strategyManager, exchangeManager, userManager, simulationManager))
 	return &Router{
 		r: r,
@@ -47,7 +50,10 @@ func getRegisterHandler(userManager *user.Manager) gin.HandlerFunc {
 		param := Param{}
 		err := c.BindJSON(&param)
 		if err != nil {
-			log.Println(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"err": err,
+				"msg": "request body error",
+			})
 			return
 		}
 
@@ -78,7 +84,10 @@ func getUpsertBinanceKeyHandler(userManager *user.Manager) gin.HandlerFunc {
 		param := Param{}
 		err := c.BindJSON(&param)
 		if err != nil {
-			log.Println(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"err": err,
+				"msg": "request body error",
+			})
 			return
 		}
 
@@ -98,14 +107,13 @@ func getUpsertBinanceKeyHandler(userManager *user.Manager) gin.HandlerFunc {
 	return fn
 }
 
-func getAddStrategyHandler(platform *quant.Platform) gin.HandlerFunc {
+func getAddStrategyHandler(strategyManager *strategy.Manager) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		type Param struct {
 			UserID       string `json:"userID"`
 			Exchange     string `json:"exchange"`
 			Symbol       string `json:"symbol"`
 			Timeframe    string `json:"timeframe"`
-			Status       int    `json:"status"`
 			StrategyName string `json:"strategyName"`
 			Script       string `json:"script"`
 		}
@@ -113,12 +121,15 @@ func getAddStrategyHandler(platform *quant.Platform) gin.HandlerFunc {
 		param := Param{}
 		err := c.BindJSON(&param)
 		if err != nil {
-			log.Println(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"err": err,
+				"msg": "request body error",
+			})
 			return
 		}
 
-		strategyID, err := platform.AddStrategy(c, param.UserID, param.Exchange, param.Symbol, param.Timeframe,
-			strategy.StrategyStatus(param.Status), param.StrategyName, param.Script)
+		strategyID, err := strategyManager.Add(c, param.UserID, param.Exchange, param.Symbol,
+			param.Timeframe, strategy.Draft, param.StrategyName, param.Script)
 		if err != nil {
 			log.Println(err)
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -156,7 +167,10 @@ func getBacktestingHandler(mongoDB *db.MongoDB, strategyManager *strategy.Manage
 		param := Param{}
 		err := c.BindJSON(&param)
 		if err != nil {
-			log.Println(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"err": err,
+				"msg": "request body error",
+			})
 			return
 		}
 
@@ -176,6 +190,39 @@ func getBacktestingHandler(mongoDB *db.MongoDB, strategyManager *strategy.Manage
 		c.JSON(http.StatusOK, gin.H{
 			"simulationID": simulationID,
 			"msg":          "Backtesting run success",
+		})
+	}
+	return fn
+}
+
+func getRunStrategyHandler(platform *quant.Platform) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		type Param struct {
+			StrategyID string `json:"strategyID"`
+		}
+
+		param := Param{}
+		err := c.BindJSON(&param)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"err": err,
+				"msg": "request body error",
+			})
+			return
+		}
+
+		err = platform.RunStrategy(c, param.StrategyID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"err": err,
+				"msg": "run strategy error",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"strategyID": param.StrategyID,
+			"msg":        "Start live trade success",
 		})
 	}
 	return fn

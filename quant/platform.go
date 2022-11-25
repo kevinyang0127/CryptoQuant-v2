@@ -6,11 +6,12 @@ import (
 	"CryptoQuant-v2/strategy"
 	"CryptoQuant-v2/stream"
 	"CryptoQuant-v2/user"
-	"CryptoQuant-v2/util"
 	"context"
 	"fmt"
 	"log"
 	"sync"
+
+	mapset "github.com/deckarep/golang-set"
 )
 
 /*
@@ -21,60 +22,67 @@ Platform負責的事：
 
 type Platform struct {
 	mux             sync.Mutex
-	platformID      string
 	strategyManager *strategy.Manager
 	exchangeManager *exchange.Manager
 	userManager     *user.Manager
-	runningStream   map[string]bool     //key: streamKey
-	liveStrategyID  map[string][]string // key: streamKey, value: strategyID list
+	runningStream   mapset.Set            // streamKey set
+	liveStrategyID  map[string]mapset.Set // key: streamKey, value: strategyID set
 }
 
 func NewPlatform(strategyManager *strategy.Manager, exchangeManager *exchange.Manager, userManager *user.Manager) *Platform {
 	return &Platform{
-		platformID:      util.GenIDWithPrefix("P_", 5),
 		strategyManager: strategyManager,
 		exchangeManager: exchangeManager,
 		userManager:     userManager,
-		runningStream:   make(map[string]bool),
-		liveStrategyID:  make(map[string][]string),
+		runningStream:   mapset.NewSet(),
+		liveStrategyID:  make(map[string]mapset.Set),
 	}
 }
 
 /*
-新增strategy，並監聽所需資料推送源
+執行strategy，並監聽所需資料推送源
 */
-func (p *Platform) AddStrategy(ctx context.Context, userID string, exchange string, symbol string,
-	timeframe string, status strategy.StrategyStatus, strategyName string, script string) (strategyID string, err error) {
-
-	strategyID, err = p.strategyManager.Add(ctx, userID, exchange, symbol, timeframe, status, strategyName, script)
+func (p *Platform) RunStrategy(ctx context.Context, strategyID string) error {
+	info, err := p.strategyManager.GetStrategyInfo(ctx, strategyID)
 	if err != nil {
-		log.Println("strategyManager.Add fail")
-		return "", err
+		log.Println("strategyManager.GetStrategyInfo fail")
+		return err
 	}
 
-	if status == strategy.Live {
-		streamName, err := p.getStreamName(exchange)
+	streamName, err := p.getStreamName(info.Exchange)
+	if err != nil {
+		log.Println("p.getStreamName fail")
+		return err
+	}
+
+	streamParam := stream.KlineStreamParam{
+		Name:      streamName,
+		Symbol:    info.Symbol,
+		Timeframe: info.Timeframe,
+	}
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	go p.ListenAndHandleKlineStream(ctx, info.Exchange, streamParam)
+
+	streamKey := stream.GenKlineStreamKey(streamParam)
+	_, ok := p.liveStrategyID[streamKey]
+	if !ok {
+		p.liveStrategyID[streamKey] = mapset.NewSet()
+	}
+
+	if info.Status != strategy.Live {
+		err = p.strategyManager.UpdateStatus(ctx, strategyID, strategy.Live)
 		if err != nil {
-			log.Println("p.getStreamName fail")
-			return "", err
+			log.Println("strategyManager.UpdateStatus fail")
+			return err
 		}
-
-		streamParam := stream.KlineStreamParam{
-			Name:      streamName,
-			Symbol:    symbol,
-			Timeframe: timeframe,
-		}
-
-		p.mux.Lock()
-		defer p.mux.Unlock()
-
-		go p.ListenNewKlineStream(ctx, exchange, streamParam)
-
-		streamKey := stream.GenKlineStreamKey(streamParam)
-		p.liveStrategyID[streamKey] = append(p.liveStrategyID[streamKey], strategyID)
 	}
 
-	return strategyID, nil
+	p.liveStrategyID[streamKey].Add(strategyID)
+
+	return nil
 }
 
 func (p *Platform) getStreamName(exchangeName string) (stream.StreamName, error) {
@@ -90,23 +98,22 @@ func (p *Platform) getStreamName(exchangeName string) (stream.StreamName, error)
 /*
 監聽新的k線資料流
 */
-func (p *Platform) ListenNewKlineStream(ctx context.Context, exchange string, param stream.KlineStreamParam) {
+func (p *Platform) ListenAndHandleKlineStream(ctx context.Context, exchange string, param stream.KlineStreamParam) {
 	streamKey := stream.GenKlineStreamKey(param)
-	isRunning := p.runningStream[streamKey]
-	if isRunning {
+	if p.runningStream.Contains(streamKey) {
 		// 已經在監聽該資料流了
 		return
 	}
 
 	ch := make(chan market.Kline)
-	err := stream.KlineStreamManager.Subscribe(ctx, param, p.platformID, ch)
+	err := stream.KlineStreamManager.Subscribe(ctx, param, "PLATFORM", ch)
 	if err != nil {
 		log.Println("KlineStreamManager.Subscribe fail")
 		log.Println(err)
 		return
 	}
 
-	p.runningStream[streamKey] = true
+	p.runningStream.Add(streamKey)
 
 	// 取得前500根k線資料
 	klines, err := p.getLimitKlineHistory(ctx, exchange, param.Symbol, param.Timeframe, 500)
@@ -133,15 +140,21 @@ func (p *Platform) ListenNewKlineStream(ctx context.Context, exchange string, pa
 			}
 
 			p.mux.Lock()
-			liveStrategyIDList := p.liveStrategyID[streamKey]
-			for _, liveStrategyID := range liveStrategyIDList {
-				s, err := p.strategyManager.GetStrategyByID(ctx, liveStrategyID)
+			liveStrategyIDSet := p.liveStrategyID[streamKey]
+			for _, liveStrategyID := range liveStrategyIDSet.ToSlice() {
+				strategyID := fmt.Sprintf("%v", liveStrategyID)
+				s, err := p.strategyManager.GetStrategyByID(ctx, strategyID)
 				if err != nil {
 					log.Println("strategyManager.GetStrategyByID fail")
 					log.Println(err)
 					continue
 				}
-				s.HandleKline(klines, kline)
+				err = s.HandleKline(klines, kline)
+				if err != nil {
+					log.Println("s.HandleKline fail")
+					log.Println(err)
+					continue
+				}
 			}
 			p.mux.Unlock()
 		}
