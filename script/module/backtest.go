@@ -18,6 +18,7 @@ func GetBacktestExports(simulationManager *simulation.Manager) map[string]lua.LG
 		"cancelAllOrders": getBacktestCancelAllOrderLGFunc(simulationManager),
 		"getAllOrders":    getBacktestGetAllOrdersLGFunc(simulationManager),
 		"hasPosition":     getBacktestHasPositionLGFunc(simulationManager),
+		"lineNotif":       unsupport,
 	}
 }
 

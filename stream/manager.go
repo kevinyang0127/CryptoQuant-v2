@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 )
 
 var KlineStreamManager *Manager
@@ -80,8 +81,8 @@ func (m *Manager) klineHandler(streamKey string, kline market.Kline) {
 	for _, s := range subscribeList {
 		select {
 		case s.SubscriberCh <- kline:
-		default:
-			log.Printf("publish to subscriber(key = %s) fail", streamKey)
+		case <-time.After(3 * time.Second):
+			log.Printf("publish to subscriber(key = %s) fail, timeout", streamKey)
 		}
 	}
 }

@@ -2,6 +2,7 @@ package module
 
 import (
 	"CryptoQuant-v2/exchange"
+	"CryptoQuant-v2/notify"
 	"context"
 	"log"
 
@@ -19,6 +20,7 @@ func GetTradeExports(exchangeManager *exchange.Manager) map[string]lua.LGFunctio
 		"getAllOrders":    unsupport,
 		"hasPosition":     getHasPositionLGFunc(exchangeManager),
 		"getBalance":      unsupport,
+		"lineNotif":       getLineNotifLGFunc(),
 	}
 }
 
@@ -246,7 +248,23 @@ return orders table
 */
 func getAllOrdersLGFunc(exchangeManager *exchange.Manager) lua.LGFunction {
 	fn := func(L *lua.LState) int {
-		// TODO
+		// exchangeName := L.GetGlobal("ExchangeName").String()
+		// userID := L.GetGlobal("UserID").String()
+		// symbol := L.GetGlobal("Symbol").String()
+
+		// ctx := context.Background()
+		// ex, err := exchangeManager.GetExchange(ctx, exchangeName, userID)
+		// if err != nil {
+		// 	log.Println("cryptoquant.cancelAllOrder() fail, exchangeManager.GetExchange error")
+		// 	log.Println(err)
+		// 	return 0
+		// }
+
+		// err = ex.(ctx, symbol)
+		// if err != nil {
+		// 	log.Println("cryptoquant.cancelAllOrder() fail, ex.CancelAllOpenOrders error")
+		// 	log.Println(err)
+		// }
 		return 0
 	}
 	return fn
@@ -280,6 +298,29 @@ func getHasPositionLGFunc(exchangeManager *exchange.Manager) lua.LGFunction {
 
 		L.Push(lua.LBool(hasPosition))
 		return 1
+	}
+	return fn
+}
+
+/*
+cryptoquant.lineNotif(msg) --發送line通知
+no return value
+*/
+func getLineNotifLGFunc() lua.LGFunction {
+	fn := func(L *lua.LState) int {
+		paramCount := L.GetTop()
+		if paramCount != 1 {
+			log.Println("cryptoquant.lineNotif() paramCount != 1")
+			return 0
+		}
+
+		msg := L.CheckString(1)
+		err := notify.SendMsg(msg)
+		if err != nil {
+			log.Println("cryptoquant.lineNotif() fail,notify.SendMsg error")
+		}
+
+		return 0
 	}
 	return fn
 }
