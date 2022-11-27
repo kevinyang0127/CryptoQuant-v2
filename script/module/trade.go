@@ -21,6 +21,8 @@ func GetTradeExports(exchangeManager *exchange.Manager) map[string]lua.LGFunctio
 		"hasPosition":     getHasPositionLGFunc(exchangeManager),
 		"getBalance":      unsupport,
 		"lineNotif":       getLineNotifLGFunc(),
+		"stopLossOrder":   getStopLossOrderLGFunc(exchangeManager),
+		"takeProfitOrder": getTakeProfitOrderLGFunc(exchangeManager),
 	}
 }
 
@@ -320,6 +322,120 @@ func getLineNotifLGFunc() lua.LGFunction {
 			log.Println("cryptoquant.lineNotif() fail,notify.SendMsg error")
 		}
 
+		return 0
+	}
+	return fn
+}
+
+/*
+cryptoquant.stopLossOrder(side, price, qty, stopPrice) --限價停損單
+no return value
+當side為true時，當前價格小於stopPrice時觸發
+當side為false時，當前價格大於stopPrice時觸發
+*/
+func getStopLossOrderLGFunc(exchangeManager *exchange.Manager) lua.LGFunction {
+	fn := func(L *lua.LState) int {
+		paramCount := L.GetTop()
+		if paramCount != 4 {
+			log.Println("cryptoquant.stopLossOrder() paramCount != 4")
+			return 0
+		}
+
+		exchangeName := L.GetGlobal("ExchangeName").String()
+		userID := L.GetGlobal("UserID").String()
+		symbol := L.GetGlobal("Symbol").String()
+
+		side := L.CheckBool(1)
+		price := L.CheckNumber(2)
+		priceD := decimal.NewFromFloat(float64(price))
+		if priceD.IsNegative() {
+			log.Println("cryptoquant.stopLossOrder() fail, input price is negative")
+			return 0
+		}
+		qty := L.CheckNumber(3)
+		qtyD := decimal.NewFromFloat(float64(qty))
+		if qtyD.IsNegative() {
+			log.Println("cryptoquant.stopLossOrder() fail, input qty is negative")
+			return 0
+		}
+
+		stopPirce := L.CheckNumber(4)
+		stopPirceD := decimal.NewFromFloat(float64(stopPirce))
+		if stopPirceD.IsNegative() {
+			log.Println("cryptoquant.stopLossOrder() fail, input stopPirce is negative")
+			return 0
+		}
+
+		ctx := context.Background()
+		ex, err := exchangeManager.GetExchange(ctx, exchangeName, userID)
+		if err != nil {
+			log.Println("cryptoquant.stopLossOrder() fail, exchangeManager.GetExchange error")
+			log.Println(err)
+			return 0
+		}
+
+		err = ex.CreateStopLossOrder(ctx, symbol, side, priceD, qtyD, stopPirceD)
+		if err != nil {
+			log.Println("cryptoquant.order() fail, ex.CreateStopLossOrder error")
+			log.Println(err)
+		}
+		return 0
+	}
+	return fn
+}
+
+/*
+cryptoquant.takeProfitOrder(side, price, qty, stopPrice) --限價停利單
+no return value
+當side為true時，當前價格大於stopPrice時觸發
+當side為false時，當前價格小於stopPrice時觸發
+*/
+func getTakeProfitOrderLGFunc(exchangeManager *exchange.Manager) lua.LGFunction {
+	fn := func(L *lua.LState) int {
+		paramCount := L.GetTop()
+		if paramCount != 4 {
+			log.Println("cryptoquant.takeProfitOrder() paramCount != 4")
+			return 0
+		}
+
+		exchangeName := L.GetGlobal("ExchangeName").String()
+		userID := L.GetGlobal("UserID").String()
+		symbol := L.GetGlobal("Symbol").String()
+
+		side := L.CheckBool(1)
+		price := L.CheckNumber(2)
+		priceD := decimal.NewFromFloat(float64(price))
+		if priceD.IsNegative() {
+			log.Println("cryptoquant.takeProfitOrder() fail, input price is negative")
+			return 0
+		}
+		qty := L.CheckNumber(3)
+		qtyD := decimal.NewFromFloat(float64(qty))
+		if qtyD.IsNegative() {
+			log.Println("cryptoquant.takeProfitOrder() fail, input qty is negative")
+			return 0
+		}
+
+		stopPirce := L.CheckNumber(4)
+		stopPirceD := decimal.NewFromFloat(float64(stopPirce))
+		if stopPirceD.IsNegative() {
+			log.Println("cryptoquant.takeProfitOrder() fail, input stopPirce is negative")
+			return 0
+		}
+
+		ctx := context.Background()
+		ex, err := exchangeManager.GetExchange(ctx, exchangeName, userID)
+		if err != nil {
+			log.Println("cryptoquant.takeProfitOrder() fail, exchangeManager.GetExchange error")
+			log.Println(err)
+			return 0
+		}
+
+		err = ex.CreateTakeProfitOrder(ctx, symbol, side, priceD, qtyD, stopPirceD)
+		if err != nil {
+			log.Println("cryptoquant.takeProfitOrder() fail, ex.CreateTakeProfitOrder error")
+			log.Println(err)
+		}
 		return 0
 	}
 	return fn

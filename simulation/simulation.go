@@ -33,9 +33,19 @@ type Position struct {
 	OpenPrice decimal.Decimal // 開倉時的價格，如果有加倉則會算出平均價
 }
 
+type OrderType int
+
+const (
+	Normal OrderType = iota
+	StopLoss
+	TakeProfit
+)
+
 type Order struct {
-	Quantity decimal.Decimal
-	Price    decimal.Decimal
+	Type      OrderType
+	Quantity  decimal.Decimal
+	Price     decimal.Decimal
+	StopPrice decimal.Decimal //若為停損停利單的觸發價格
 }
 
 type TradeLog struct {
@@ -84,17 +94,55 @@ func (s *Simulation) checkOrderMatch(ctx context.Context, kline market.Kline) {
 	doneOrderIndexs := make(map[int]bool)
 	someOrderDone := false
 	for i, order := range s.orders {
-		// 掛單價位在k線範圍當中
-		if order.Price.GreaterThanOrEqual(kline.Low) && order.Price.LessThanOrEqual(kline.High) {
-			if s.positon == nil || s.positon.Quantity.Mul(order.Quantity).IsPositive() {
-				// 開倉/加倉
-				s.Entry(ctx, order.Price, order.Quantity, true, kline.EndTime)
-			} else {
-				// 關倉/減倉
-				s.Exit(ctx, order.Price, order.Quantity.Abs(), true, kline.EndTime)
+		switch order.Type {
+		case Normal:
+			// 買入只要訂單價錢高於目前價格，或賣出只要訂單價錢低於目前價格都會觸發成交
+			if (order.Quantity.IsPositive() && order.Price.GreaterThanOrEqual(kline.Low)) ||
+				(order.Quantity.IsNegative() && order.Price.LessThanOrEqual(kline.High)) {
+				// 掛單價位在k線範圍當中，就會以掛單價位成交，不然就是以收盤價成交
+				matchPrice := kline.Close
+				isMaker := false
+				if order.Price.GreaterThanOrEqual(kline.Low) && order.Price.LessThanOrEqual(kline.High) {
+					matchPrice = order.Price
+					isMaker = true
+				}
+
+				if s.positon == nil || s.positon.Quantity.Mul(order.Quantity).IsPositive() {
+					// 開倉/加倉
+					log.Println("Normal order Entry, order = ", order)
+					s.Entry(ctx, matchPrice, order.Quantity, isMaker, kline.EndTime)
+				} else {
+					// 關倉/減倉
+					log.Println("Normal order Exit, order = ", order)
+					s.Exit(ctx, matchPrice, order.Quantity.Abs(), isMaker, kline.EndTime)
+				}
+				doneOrderIndexs[i] = true
+				someOrderDone = true
 			}
-			doneOrderIndexs[i] = true
-			someOrderDone = true
+		case StopLoss:
+			// 多單當k線最低價低於觸發價 或 空單當k線最高價高於觸發價 時，會觸發成交
+			// 限價停損掛單是賣出代表原本是買入
+			if (order.Quantity.IsNegative() && kline.Low.LessThanOrEqual(order.StopPrice)) ||
+				(order.Quantity.IsPositive() && kline.High.GreaterThanOrEqual(order.StopPrice)) {
+				//FIXME: 如果希望達到order.StopPrice後掛單掛上合理的order.Price呢？
+				//ex: 做多時 停損觸發在100元賣出，但掛單掛120元賣出（若掛單掛在100元以下賣出都會以100元馬上成交）
+				log.Println("StopLoss order exit, order = ", order)
+				s.Exit(ctx, order.StopPrice, order.Quantity.Abs(), true, kline.EndTime)
+				doneOrderIndexs[i] = true
+				someOrderDone = true
+			}
+		case TakeProfit:
+			// 多單當k線最高價高於觸發價 或 空單當k線最低價低於觸發價 時，會觸發成交
+			// 限價停利掛單是賣出代表原本是買入
+			if order.Quantity.IsNegative() && kline.High.GreaterThanOrEqual(order.StopPrice) ||
+				(order.Quantity.IsPositive() && kline.Low.LessThanOrEqual(order.StopPrice)) {
+				//FIXME: 如果希望達到order.StopPrice後掛單掛上合理的order.Price呢？
+				//ex: 做多時 停利觸發在100元賣出，但掛單掛120元賣出（若掛單掛在100元以下賣出都會以100元馬上成交）
+				log.Println("TakeProfit order exit, order = ", order)
+				s.Exit(ctx, order.StopPrice, order.Quantity.Abs(), true, kline.EndTime)
+				doneOrderIndexs[i] = true
+				someOrderDone = true
+			}
 		}
 	}
 
@@ -256,8 +304,34 @@ func (s *Simulation) Order(ctx context.Context, price decimal.Decimal, quantity 
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	s.orders = append(s.orders, &Order{
-		Quantity: quantity,
-		Price:    price,
+		Type:      Normal,
+		Quantity:  quantity,
+		Price:     price,
+		StopPrice: decimal.Zero,
+	})
+}
+
+// 限價停損掛單, quantity為正代表買入，為負代表賣出
+func (s *Simulation) StopLossOrder(ctx context.Context, price decimal.Decimal, quantity decimal.Decimal, stopPrice decimal.Decimal) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	s.orders = append(s.orders, &Order{
+		Type:      StopLoss,
+		Quantity:  quantity,
+		Price:     price,
+		StopPrice: stopPrice,
+	})
+}
+
+// 限價停利掛單, quantity為正代表買入，為負代表賣出
+func (s *Simulation) TakeProfitOrder(ctx context.Context, price decimal.Decimal, quantity decimal.Decimal, stopPrice decimal.Decimal) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	s.orders = append(s.orders, &Order{
+		Type:      TakeProfit,
+		Quantity:  quantity,
+		Price:     price,
+		StopPrice: stopPrice,
 	})
 }
 

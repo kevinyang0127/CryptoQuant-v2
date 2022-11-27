@@ -164,6 +164,90 @@ func (m *Manager) Order(ctx context.Context, simulationID string, side bool, pri
 	return nil
 }
 
+func (m *Manager) StopLossOrder(ctx context.Context, simulationID string, side bool, price string, quantity string, stopPrice string) error {
+	priceD, err := decimal.NewFromString(price)
+	if err != nil {
+		log.Println("decimal.NewFromString error")
+		return err
+	}
+	quantityD, err := decimal.NewFromString(quantity)
+	if err != nil {
+		log.Println("decimal.NewFromString error")
+		return err
+	}
+	stopPriceD, err := decimal.NewFromString(stopPrice)
+	if err != nil {
+		log.Println("decimal.NewFromString error")
+		return err
+	}
+
+	if priceD.IsNegative() {
+		log.Println("input price IsNegative")
+		return fmt.Errorf("input price IsNegative")
+	}
+	if quantityD.IsNegative() {
+		log.Println("input quantity IsNegative")
+		return fmt.Errorf("input quantity IsNegative")
+	}
+	if stopPriceD.IsNegative() {
+		log.Println("input stopPrice IsNegative")
+		return fmt.Errorf("input stopPrice IsNegative")
+	}
+
+	if !side {
+		quantityD = quantityD.Mul(decimal.NewFromInt(-1))
+	}
+
+	s, ok := m.simulationMap[simulationID]
+	if !ok {
+		return fmt.Errorf("simulationMap can't find simulationID = %s", simulationID)
+	}
+	s.StopLossOrder(ctx, priceD, quantityD, stopPriceD)
+	return nil
+}
+
+func (m *Manager) TakeProfitOrder(ctx context.Context, simulationID string, side bool, price string, quantity string, stopPrice string) error {
+	priceD, err := decimal.NewFromString(price)
+	if err != nil {
+		log.Println("decimal.NewFromString error")
+		return err
+	}
+	quantityD, err := decimal.NewFromString(quantity)
+	if err != nil {
+		log.Println("decimal.NewFromString error")
+		return err
+	}
+	stopPriceD, err := decimal.NewFromString(stopPrice)
+	if err != nil {
+		log.Println("decimal.NewFromString error")
+		return err
+	}
+
+	if priceD.IsNegative() {
+		log.Println("input price IsNegative")
+		return fmt.Errorf("input price IsNegative")
+	}
+	if quantityD.IsNegative() {
+		log.Println("input quantity IsNegative")
+		return fmt.Errorf("input quantity IsNegative")
+	}
+	if stopPriceD.IsNegative() {
+		log.Println("input stopPrice IsNegative")
+		return fmt.Errorf("input stopPrice IsNegative")
+	}
+
+	if !side {
+		quantityD = quantityD.Mul(decimal.NewFromInt(-1))
+	}
+
+	s, ok := m.simulationMap[simulationID]
+	if !ok {
+		return fmt.Errorf("simulationMap can't find simulationID = %s", simulationID)
+	}
+	s.TakeProfitOrder(ctx, priceD, quantityD, stopPriceD)
+	return nil
+}
+
 func (m *Manager) CloseAllOrder(ctx context.Context, simulationID string) error {
 	s, ok := m.simulationMap[simulationID]
 	if !ok {

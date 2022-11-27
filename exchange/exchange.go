@@ -38,4 +38,10 @@ type Exchange interface {
 
 	// 取消所有掛單委託
 	CancelAllOpenOrders(ctx context.Context, symbol string) error
+
+	// 創建限價止損訂單
+	CreateStopLossOrder(ctx context.Context, symbol string, side bool, price decimal.Decimal, quantity decimal.Decimal, stopPrice decimal.Decimal) error
+
+	// 創建限價止盈訂單
+	CreateTakeProfitOrder(ctx context.Context, symbol string, side bool, price decimal.Decimal, quantity decimal.Decimal, stopPrice decimal.Decimal) error
 }

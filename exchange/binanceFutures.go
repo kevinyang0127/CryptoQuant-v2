@@ -225,3 +225,69 @@ func (bf *BinanceFuture) GetPosition(ctx context.Context, symbol string) (*marke
 	}
 	return nil, nil
 }
+
+func (bf *BinanceFuture) CreateStopLossOrder(ctx context.Context, symbol string, side bool, price decimal.Decimal, quantity decimal.Decimal, stopPrice decimal.Decimal) error {
+	if price.IsNegative() {
+		return fmt.Errorf("price is negative error")
+	}
+	if stopPrice.IsNegative() {
+		return fmt.Errorf("stopPrice is negative error")
+	}
+	if quantity.IsNegative() {
+		return fmt.Errorf("quantity is negative error")
+	}
+
+	var sideType binanceFutures.SideType
+	if side {
+		sideType = binanceFutures.SideTypeBuy
+	} else {
+		sideType = binanceFutures.SideTypeSell
+	}
+	createOrderServ := bf.clinet.NewCreateOrderService()
+	createOrderServ.Symbol(symbol)
+	createOrderServ.Side(sideType)
+	createOrderServ.Type(binanceFutures.OrderTypeStop)
+	createOrderServ.Price(price.StringFixed(bf.getPricePrecision(symbol)))
+	createOrderServ.Quantity(quantity.StringFixed(bf.getQuantityPrecision(symbol)))
+	createOrderServ.StopPrice(stopPrice.StringFixed(bf.getPricePrecision(symbol)))
+	_, err := createOrderServ.Do(ctx)
+	if err != nil {
+		log.Println("CreateStopLossOrder request fail")
+		return err
+	}
+
+	return nil
+}
+
+func (bf *BinanceFuture) CreateTakeProfitOrder(ctx context.Context, symbol string, side bool, price decimal.Decimal, quantity decimal.Decimal, stopPrice decimal.Decimal) error {
+	if price.IsNegative() {
+		return fmt.Errorf("price is negative error")
+	}
+	if stopPrice.IsNegative() {
+		return fmt.Errorf("stopPrice is negative error")
+	}
+	if quantity.IsNegative() {
+		return fmt.Errorf("quantity is negative error")
+	}
+
+	var sideType binanceFutures.SideType
+	if side {
+		sideType = binanceFutures.SideTypeBuy
+	} else {
+		sideType = binanceFutures.SideTypeSell
+	}
+	createOrderServ := bf.clinet.NewCreateOrderService()
+	createOrderServ.Symbol(symbol)
+	createOrderServ.Side(sideType)
+	createOrderServ.Type(binanceFutures.OrderTypeTakeProfit)
+	createOrderServ.Price(price.StringFixed(bf.getPricePrecision(symbol)))
+	createOrderServ.Quantity(quantity.StringFixed(bf.getQuantityPrecision(symbol)))
+	createOrderServ.StopPrice(stopPrice.StringFixed(bf.getPricePrecision(symbol)))
+	_, err := createOrderServ.Do(ctx)
+	if err != nil {
+		log.Println("CreateTakeProfitOrder request fail")
+		return err
+	}
+
+	return nil
+}

@@ -19,6 +19,8 @@ func GetBacktestExports(simulationManager *simulation.Manager) map[string]lua.LG
 		"getAllOrders":    getBacktestGetAllOrdersLGFunc(simulationManager),
 		"hasPosition":     getBacktestHasPositionLGFunc(simulationManager),
 		"lineNotif":       unsupport,
+		"stopLossOrder":   getBacktestStopLossOrderLGFunc(simulationManager),
+		"takeProfitOrder": getBacktestTakeProfitOrderLGFunc(simulationManager),
 	}
 }
 
@@ -41,6 +43,9 @@ func getBacktestEntryLGFunc(simulationManager *simulation.Manager) lua.LGFunctio
 		nowPrice := L.GetGlobal("NowPrice").String()
 		klineEndTimeS := L.GetGlobal("KlineEndTime").String()
 		klineEndTime, _ := strconv.ParseInt(klineEndTimeS, 10, 64)
+
+		log.Printf("market entry, nowPrice = %s, side = %v qty = %f", nowPrice, side, qty)
+
 		simulationManager.Entry(context.Background(), simulationID, side, nowPrice, qty.String(), false, klineEndTime)
 
 		return 0
@@ -183,6 +188,56 @@ func getBacktestHasPositionLGFunc(simulationManager *simulation.Manager) lua.LGF
 		L.Push(lua.LBool(hasPosition))
 
 		return 1
+	}
+	return fn
+}
+
+/*
+cryptoquant.stopLossOrder(side, price, qty, stopPrice) --限價停損單
+no return value
+當side為true時，當前價格小於stopPrice時觸發
+當side為false時，當前價格大於stopPrice時觸發
+*/
+func getBacktestStopLossOrderLGFunc(simulationManager *simulation.Manager) lua.LGFunction {
+	fn := func(L *lua.LState) int {
+
+		simulationID := L.GetGlobal("SimulationID").String()
+
+		side := L.CheckBool(1)
+		price := L.CheckNumber(2)
+		qty := L.CheckNumber(3)
+		stopPrice := L.CheckNumber(4)
+
+		log.Printf("get new stop loss order, side = %v, price = %f, qty = %f, stopPirce = %f", side, price, qty, stopPrice)
+
+		simulationManager.StopLossOrder(context.Background(), simulationID, side, price.String(), qty.String(), stopPrice.String())
+
+		return 0
+	}
+	return fn
+}
+
+/*
+cryptoquant.takeProfitOrder(side, price, qty, stopPrice) --限價停利單
+no return value
+當side為true時，當前價格大於stopPrice時觸發
+當side為false時，當前價格小於stopPrice時觸發
+*/
+func getBacktestTakeProfitOrderLGFunc(simulationManager *simulation.Manager) lua.LGFunction {
+	fn := func(L *lua.LState) int {
+
+		simulationID := L.GetGlobal("SimulationID").String()
+
+		side := L.CheckBool(1)
+		price := L.CheckNumber(2)
+		qty := L.CheckNumber(3)
+		stopPrice := L.CheckNumber(4)
+
+		log.Printf("get new take profit order, side = %v, price = %f, qty = %f, stopPirce = %f", side, price, qty, stopPrice)
+
+		simulationManager.TakeProfitOrder(context.Background(), simulationID, side, price.String(), qty.String(), stopPrice.String())
+
+		return 0
 	}
 	return fn
 }
