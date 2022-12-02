@@ -272,3 +272,11 @@ func (m *Manager) GetPosition(ctx context.Context, simulationID string) (*Positi
 	}
 	return s.GetPosition(ctx), nil
 }
+
+func (m *Manager) GetBalance(ctx context.Context, simulationID string) (decimal.Decimal, error) {
+	s, ok := m.simulationMap[simulationID]
+	if !ok {
+		return decimal.Zero, fmt.Errorf("simulationMap can't find simulationID = %s", simulationID)
+	}
+	return s.GetBalance(ctx), nil
+}

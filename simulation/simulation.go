@@ -355,3 +355,10 @@ func (s *Simulation) GetPosition(ctx context.Context) *Position {
 	defer s.mux.Unlock()
 	return s.positon
 }
+
+// 取得目前餘額
+func (s *Simulation) GetBalance(ctx context.Context) decimal.Decimal {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	return s.balance
+}

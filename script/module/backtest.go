@@ -21,6 +21,7 @@ func GetBacktestExports(simulationManager *simulation.Manager) map[string]lua.LG
 		"lineNotif":       unsupport,
 		"stopLossOrder":   getBacktestStopLossOrderLGFunc(simulationManager),
 		"takeProfitOrder": getBacktestTakeProfitOrderLGFunc(simulationManager),
+		"getBalance":      getBacktestBalanceLGFunc(simulationManager),
 	}
 }
 
@@ -238,6 +239,28 @@ func getBacktestTakeProfitOrderLGFunc(simulationManager *simulation.Manager) lua
 		simulationManager.TakeProfitOrder(context.Background(), simulationID, side, price.String(), qty.String(), stopPrice.String())
 
 		return 0
+	}
+	return fn
+}
+
+/*
+cryptoquant.getBalance() --取得帳戶餘額
+return balance
+*/
+func getBacktestBalanceLGFunc(simulationManager *simulation.Manager) lua.LGFunction {
+	fn := func(L *lua.LState) int {
+
+		simulationID := L.GetGlobal("SimulationID").String()
+
+		b, err := simulationManager.GetBalance(context.Background(), simulationID)
+		if err != nil {
+			log.Println("simulationManager.GetBalance fail")
+			log.Println(err)
+			return 0
+		}
+
+		L.Push(lua.LNumber(b.InexactFloat64()))
+		return 1
 	}
 	return fn
 }
