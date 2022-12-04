@@ -176,23 +176,46 @@ func (p *Platform) getLimitKlineHistory(ctx context.Context, exchangeName string
 	return klines, nil
 }
 
-/*
-停止已經存在的strategy，使其不會被呼叫
-*/
-func (p *Platform) StopStrategy() {
+// 停止正在運行的strategy，使其不會被呼叫
+func (p *Platform) StopStrategy(ctx context.Context, strategyID string) error {
+	info, err := p.strategyManager.GetStrategyInfo(ctx, strategyID)
+	if err != nil {
+		log.Println("strategyManager.GetStrategyInfo fail")
+		return err
+	}
 
-}
+	streamName, err := p.getStreamName(info.Exchange)
+	if err != nil {
+		log.Println("p.getStreamName fail")
+		return err
+	}
 
-/*
-恢復已經被停止的strategy
-*/
-func (p *Platform) RecoverStrategy() {
+	streamParam := stream.KlineStreamParam{
+		Name:      streamName,
+		Symbol:    info.Symbol,
+		Timeframe: info.Timeframe,
+	}
+	streamKey := stream.GenKlineStreamKey(streamParam)
 
-}
+	p.mux.Lock()
+	defer p.mux.Unlock()
 
-/*
-移除已經存在的strategy
-*/
-func (p *Platform) RemoveStrategy() {
+	if info.Status == strategy.Live {
+		err = p.strategyManager.UpdateStatus(ctx, strategyID, strategy.Stop)
+		if err != nil {
+			log.Println("strategyManager.UpdateStatus fail")
+			return err
+		}
+	}
 
+	_, ok := p.liveStrategyID[streamKey]
+	if ok {
+		p.liveStrategyID[streamKey].Remove(strategyID)
+		// TODO close stream when no strategy listen this stream
+		// if p.liveStrategyID[streamKey].Cardinality() == 0 {
+		// 	p.runningStream.Remove(streamKey)
+		// }
+	}
+
+	return nil
 }

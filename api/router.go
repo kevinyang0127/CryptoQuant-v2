@@ -37,7 +37,7 @@ func NewRouter(mongoDB *db.MongoDB, platform *quant.Platform, strategyManager *s
 	r.DELETE("/strategy", getDeleteStrategyHandler(strategyManager))
 	r.POST("/strategy", getAddStrategyHandler(strategyManager))
 	r.POST("/strategy/live", getRunStrategyHandler(platform))
-	// r.POST("/strategy/stop", getAddStrategyHandler(platform))
+	r.POST("/strategy/stop", getStopStrategyHandler(platform))
 	r.POST("/backtesting", getBacktestingHandler(mongoDB, strategyManager, exchangeManager, userManager, simulationManager))
 	return &Router{
 		r: r,
@@ -361,7 +361,40 @@ func getRunStrategyHandler(platform *quant.Platform) gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{
 			"strategyID": param.StrategyID,
-			"msg":        "Start live trade success",
+			"msg":        "run strategy success",
+		})
+	}
+	return fn
+}
+
+func getStopStrategyHandler(platform *quant.Platform) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		type Param struct {
+			StrategyID string `json:"strategyID"`
+		}
+
+		param := Param{}
+		err := c.BindJSON(&param)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"err": err.Error(),
+				"msg": "request body error",
+			})
+			return
+		}
+
+		err = platform.StopStrategy(c, param.StrategyID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"err": err.Error(),
+				"msg": "stop strategy error",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"strategyID": param.StrategyID,
+			"msg":        "stop strategy success",
 		})
 	}
 	return fn

@@ -98,10 +98,6 @@ func (m *Manager) getDefaultStrategy(strategyInfo *StrategyInfo) Strategy {
 	return NewLuaScriptStrategy(m.luaScriptHandler, strategyInfo)
 }
 
-func (m *Manager) GetStrategyByUserIDAndName(ctx context.Context, userID string, Name string) (Strategy, error) {
-	return nil, nil
-}
-
 func (m *Manager) GetStrategyInfoByUserID(ctx context.Context, userID string) ([]*StrategyInfo, error) {
 	result := []*StrategyInfo{}
 	err := m.mongoDB.FindAll(ctx, "cryptoQuantV2", "strategy", bson.D{{"userID", userID}}, &result)
@@ -173,6 +169,11 @@ func (m *Manager) UpdateStrategyInfo(ctx context.Context, strategyID string, str
 	}
 	if strategyInfoUpdater.Script != "" {
 		updater = append(updater, bson.E{"script", strategyInfoUpdater.Script})
+	}
+
+	// 狀態是停止的話，有更動就改成draft
+	if len(updater) > 0 && info.Status == Stop {
+		updater = append(updater, bson.E{"status", Draft})
 	}
 
 	err = m.mongoDB.UpdateOne(ctx, "cryptoQuantV2", "strategy", bson.D{{"strategyID", strategyID}}, updater)
