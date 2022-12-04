@@ -4,6 +4,7 @@ import (
 	"CryptoQuant-v2/exchange"
 	"CryptoQuant-v2/notify"
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/shopspring/decimal"
@@ -305,7 +306,8 @@ func getHasPositionLGFunc(exchangeManager *exchange.Manager) lua.LGFunction {
 }
 
 /*
-cryptoquant.lineNotif(msg) --發送line通知
+cryptoquant.lineNotif(data) --發送line通知
+data is a table
 no return value
 */
 func getLineNotifLGFunc() lua.LGFunction {
@@ -316,7 +318,32 @@ func getLineNotifLGFunc() lua.LGFunction {
 			return 0
 		}
 
-		msg := L.CheckString(1)
+		msgMap := make(map[string]string)
+		keys := []string{}
+
+		strategyID := L.GetGlobal("StrategyID")
+		keys = append(keys, "StrategyID")
+		msgMap["StrategyID"] = strategyID.String()
+
+		exchangeName := L.GetGlobal("ExchangeName")
+		keys = append(keys, "ExchangeName")
+		msgMap["ExchangeName"] = exchangeName.String()
+
+		symbol := L.GetGlobal("Symbol")
+		keys = append(keys, "Symbol")
+		msgMap["Symbol"] = symbol.String()
+
+		timeframe := L.GetGlobal("Timeframe")
+		keys = append(keys, "Timeframe")
+		msgMap["Timeframe"] = timeframe.String()
+
+		data := L.CheckTable(1)
+		data.ForEach(func(l1, l2 lua.LValue) {
+			keys = append(keys, l1.String())
+			msgMap[l1.String()] = l2.String()
+		})
+
+		msg := mapToLineMsgFormat(keys, msgMap)
 		err := notify.SendMsg(msg)
 		if err != nil {
 			log.Println("cryptoquant.lineNotif() fail,notify.SendMsg error")
@@ -325,6 +352,19 @@ func getLineNotifLGFunc() lua.LGFunction {
 		return 0
 	}
 	return fn
+}
+
+func mapToLineMsgFormat(keys []string, mapData map[string]string) string {
+	msg := ""
+	for _, k := range keys {
+		v, ok := mapData[k]
+		if !ok {
+			continue
+		}
+		msg += "\n"
+		msg += fmt.Sprintf("%s: %s", k, v)
+	}
+	return msg
 }
 
 /*

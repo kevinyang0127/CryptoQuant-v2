@@ -19,7 +19,9 @@ func NewLuaScriptStrategy(luaScriptHandler *script.LuaScriptHandler, strategyInf
 }
 
 func (s *LuaScriptStrategy) HandleKline(klines []market.Kline, kline market.Kline) error {
-	err := s.luaScriptHandler.RunScriptHandleKline(s.strategyInfo.Exchange, s.strategyInfo.UserID, s.strategyInfo.Symbol, s.strategyInfo.Script, klines, kline)
+	err := s.luaScriptHandler.RunScriptHandleKline(s.strategyInfo.StrategyID, s.strategyInfo.UserID,
+		s.strategyInfo.Exchange, s.strategyInfo.Symbol, s.strategyInfo.Timeframe, s.strategyInfo.Script,
+		klines, kline)
 	if err != nil {
 		log.Println("luaScriptHandler.RunScriptHandleKline fail")
 		return err

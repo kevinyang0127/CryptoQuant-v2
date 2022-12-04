@@ -89,13 +89,15 @@ func NewLuaScriptHandler(exchangeManager *exchange.Manager, simulationManager *s
 	return handler
 }
 
-func (h *LuaScriptHandler) RunScriptHandleKline(exchangeName string, userID string, symbol string, script string, kls []market.Kline, kl market.Kline) error {
+func (h *LuaScriptHandler) RunScriptHandleKline(strategyID, userID, exchangeName, symbol, timeframe, script string, kls []market.Kline, kl market.Kline) error {
 	L := h.statePool.get()
 	defer h.statePool.put(L)
 
-	L.SetGlobal("ExchangeName", lua.LString(exchangeName))
 	L.SetGlobal("UserID", lua.LString(userID))
+	L.SetGlobal("StrategyID", lua.LString(strategyID))
+	L.SetGlobal("ExchangeName", lua.LString(exchangeName))
 	L.SetGlobal("Symbol", lua.LString(symbol))
+	L.SetGlobal("Timeframe", lua.LString(timeframe))
 
 	if err := h.precompileManager.doScript(L, script); err != nil {
 		fmt.Println("L.DoString fail")
