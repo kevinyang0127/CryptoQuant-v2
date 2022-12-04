@@ -95,33 +95,27 @@ func (mgo *MongoDB) FindOne(ctx context.Context, databaseName string, collection
 	return nil
 }
 
-// 找不到的話 results == mongo.ErrNoDocuments
-func (mgo *MongoDB) Find(ctx context.Context, databaseName string, collectionName string, filter bson.D) ([]bson.D, error) {
+/*
+results must be pointer to slice,
+if there is no result than results will be empty with no error
+*/
+func (mgo *MongoDB) FindAll(ctx context.Context, databaseName string, collectionName string, filter bson.D, results interface{}) error {
 	collection := mgo.client.Database(databaseName).Collection(collectionName)
 
 	cur, err := collection.Find(ctx, filter)
 	if err != nil {
 		log.Println("collection.Find fail")
-		return nil, err
+		return err
 	}
 	defer cur.Close(ctx)
 
-	results := []bson.D{}
-	for cur.Next(ctx) {
-		var result bson.D
-		err := cur.Decode(&result)
-		if err != nil {
-			log.Println("cur.Decode fail")
-			return nil, err
-		}
-		results = append(results, result)
-	}
-	if err := cur.Err(); err != nil {
-		log.Println("cur.Err fail")
-		return nil, err
+	err = cur.All(ctx, results)
+	if err != nil {
+		log.Println("cur.All fail")
+		return err
 	}
 
-	return results, nil
+	return nil
 }
 
 // no matched will return error
@@ -135,6 +129,22 @@ func (mgo *MongoDB) UpdateOne(ctx context.Context, databaseName string, collecti
 	}
 	if result.MatchedCount == 0 {
 		return fmt.Errorf("collection.UpdateOne no matched")
+	}
+
+	return nil
+}
+
+// no matched will return error
+func (mgo *MongoDB) DeleteOne(ctx context.Context, databaseName string, collectionName string, filter bson.D) error {
+	collection := mgo.client.Database(databaseName).Collection(collectionName)
+
+	result, err := collection.DeleteOne(ctx, filter)
+	if err != nil {
+		log.Println("collection.DeleteOne fail")
+		return err
+	}
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("collection.DeleteOne no matched")
 	}
 
 	return nil

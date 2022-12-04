@@ -1,7 +1,9 @@
 package util
 
 import (
+	"fmt"
 	"math/rand"
+	"reflect"
 	"time"
 )
 
@@ -24,4 +26,17 @@ func GenIDWithPrefix(prefix string, length int) string {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	return prefix + string(b)
+}
+
+func ToSlice(arr interface{}) ([]interface{}, error) {
+	v := reflect.ValueOf(arr)
+	if v.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("toslice arr not slice")
+	}
+	l := v.Len()
+	ret := make([]interface{}, l)
+	for i := 0; i < l; i++ {
+		ret[i] = v.Index(i).Interface()
+	}
+	return ret, nil
 }

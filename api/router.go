@@ -31,7 +31,10 @@ func NewRouter(mongoDB *db.MongoDB, platform *quant.Platform, strategyManager *s
 	})
 	r.POST("/register", getRegisterHandler(userManager))
 	r.POST("/binancefuture/key", getUpsertBinanceKeyHandler(userManager))
-	// r.GET("/strategy", getAddStrategyHandler(platform))
+	r.GET("/strategy", getGetStrategyInfoHandler(strategyManager))
+	r.GET("/strategys", getGetStrategysInfoByUserIDHandler(strategyManager))
+	r.PATCH("/strategy", getUpdateStrategyInfoHandler(strategyManager))
+	r.DELETE("/strategy", getDeleteStrategyHandler(strategyManager))
 	r.POST("/strategy", getAddStrategyHandler(strategyManager))
 	r.POST("/strategy/live", getRunStrategyHandler(platform))
 	// r.POST("/strategy/stop", getAddStrategyHandler(platform))
@@ -51,7 +54,7 @@ func getRegisterHandler(userManager *user.Manager) gin.HandlerFunc {
 		err := c.BindJSON(&param)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"err": err,
+				"err": err.Error(),
 				"msg": "request body error",
 			})
 			return
@@ -61,7 +64,7 @@ func getRegisterHandler(userManager *user.Manager) gin.HandlerFunc {
 		if err != nil {
 			log.Println(err)
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"err": err,
+				"err": err.Error(),
 			})
 			return
 		}
@@ -85,7 +88,7 @@ func getUpsertBinanceKeyHandler(userManager *user.Manager) gin.HandlerFunc {
 		err := c.BindJSON(&param)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"err": err,
+				"err": err.Error(),
 				"msg": "request body error",
 			})
 			return
@@ -95,7 +98,7 @@ func getUpsertBinanceKeyHandler(userManager *user.Manager) gin.HandlerFunc {
 		if err != nil {
 			log.Println(err)
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"err": err,
+				"err": err.Error(),
 			})
 			return
 		}
@@ -122,7 +125,7 @@ func getAddStrategyHandler(strategyManager *strategy.Manager) gin.HandlerFunc {
 		err := c.BindJSON(&param)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"err": err,
+				"err": err.Error(),
 				"msg": "request body error",
 			})
 			return
@@ -133,7 +136,7 @@ func getAddStrategyHandler(strategyManager *strategy.Manager) gin.HandlerFunc {
 		if err != nil {
 			log.Println(err)
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"err": err,
+				"err": err.Error(),
 			})
 			return
 		}
@@ -142,6 +145,142 @@ func getAddStrategyHandler(strategyManager *strategy.Manager) gin.HandlerFunc {
 			"strategyID": strategyID,
 			"msg":        "add strategy success",
 		})
+	}
+	return fn
+}
+
+func getUpdateStrategyInfoHandler(strategyManager *strategy.Manager) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		type Param struct {
+			StrategyID   string `json:"strategyID"`
+			Exchange     string `json:"exchange"`
+			Symbol       string `json:"symbol"`
+			Timeframe    string `json:"timeframe"`
+			StrategyName string `json:"strategyName"`
+			Script       string `json:"script"`
+		}
+
+		param := Param{}
+		err := c.BindJSON(&param)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"err": err.Error(),
+				"msg": "request body error",
+			})
+			return
+		}
+
+		updater := &strategy.StrategyInfoUpdater{
+			Exchange:     param.Exchange,
+			Symbol:       param.Symbol,
+			Timeframe:    param.Timeframe,
+			StrategyName: param.StrategyName,
+			Script:       param.Script,
+		}
+		err = strategyManager.UpdateStrategyInfo(c, param.StrategyID, updater)
+		if err != nil {
+			log.Println(err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"err": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"msg": "update success",
+		})
+	}
+	return fn
+}
+
+func getDeleteStrategyHandler(strategyManager *strategy.Manager) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		type Param struct {
+			StrategyID string `json:"strategyID"`
+		}
+
+		param := Param{}
+		err := c.BindJSON(&param)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"err": err.Error(),
+				"msg": "request body error",
+			})
+			return
+		}
+
+		err = strategyManager.DeleteStrategy(c, param.StrategyID)
+		if err != nil {
+			log.Println(err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"err": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"msg": "delete success",
+		})
+	}
+	return fn
+}
+
+func getGetStrategyInfoHandler(strategyManager *strategy.Manager) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		type Param struct {
+			StrategyID string `json:"strategyID"`
+		}
+
+		param := Param{}
+		err := c.BindJSON(&param)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"err": err.Error(),
+				"msg": "request body error",
+			})
+			return
+		}
+
+		info, err := strategyManager.GetStrategyInfo(c, param.StrategyID)
+		if err != nil {
+			log.Println(err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"err": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, info)
+	}
+	return fn
+}
+
+func getGetStrategysInfoByUserIDHandler(strategyManager *strategy.Manager) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		type Param struct {
+			UserID string `json:"userID"`
+		}
+
+		param := Param{}
+		err := c.BindJSON(&param)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"err": err.Error(),
+				"msg": "request body error",
+			})
+			return
+		}
+
+		infos, err := strategyManager.GetStrategyInfoByUserID(c, param.UserID)
+		if err != nil {
+			log.Println(err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"err": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, infos)
 	}
 	return fn
 }
@@ -168,7 +307,7 @@ func getBacktestingHandler(mongoDB *db.MongoDB, strategyManager *strategy.Manage
 		err := c.BindJSON(&param)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"err": err,
+				"err": err.Error(),
 				"msg": "request body error",
 			})
 			return
@@ -182,7 +321,7 @@ func getBacktestingHandler(mongoDB *db.MongoDB, strategyManager *strategy.Manage
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"msg": "Backtest error",
-				"err": err,
+				"err": err.Error(),
 			})
 			return
 		}
@@ -205,7 +344,7 @@ func getRunStrategyHandler(platform *quant.Platform) gin.HandlerFunc {
 		err := c.BindJSON(&param)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"err": err,
+				"err": err.Error(),
 				"msg": "request body error",
 			})
 			return
@@ -214,7 +353,7 @@ func getRunStrategyHandler(platform *quant.Platform) gin.HandlerFunc {
 		err = platform.RunStrategy(c, param.StrategyID)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"err": err,
+				"err": err.Error(),
 				"msg": "run strategy error",
 			})
 			return

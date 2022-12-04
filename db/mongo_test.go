@@ -65,12 +65,14 @@ func TestMongo(t *testing.T) {
 	}
 	log.Println("update result: ", result)
 
-	// r2, err := mongoDB.Find(ctx, "cryptoQuantDB", "test", bson.D{{"botID", "1234"}})
-	// if err != nil {
-	// 	log.Println(err)
-	// 	return
-	// }
-	// log.Println("r2: ", r2)
+	findAllResults := []*TradeLog{}
+	err = mongoDB.FindAll(ctx, "cryptoQuantDB", "test", bson.D{{"botID", "12345"}}, &findAllResults)
+	if err != nil {
+		log.Println(err)
+		t.Error(err)
+		return
+	}
+	log.Println("findAllResults: ", findAllResults)
 
-	t.Error("123")
+	t.Error("123456")
 }

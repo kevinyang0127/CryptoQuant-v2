@@ -5,6 +5,7 @@ import (
 	"CryptoQuant-v2/script"
 	"CryptoQuant-v2/util"
 	"context"
+	"fmt"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -101,9 +102,20 @@ func (m *Manager) GetStrategyByUserIDAndName(ctx context.Context, userID string,
 	return nil, nil
 }
 
-func (m *Manager) GetByUserID(ctx context.Context, userID string) ([]*StrategyInfo, error) {
-	//TODO
-	return nil, nil
+func (m *Manager) GetStrategyInfoByUserID(ctx context.Context, userID string) ([]*StrategyInfo, error) {
+	result := []*StrategyInfo{}
+	err := m.mongoDB.FindAll(ctx, "cryptoQuantV2", "strategy", bson.D{{"userID", userID}}, &result)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			log.Println("mongoDB.FindAll no result")
+			log.Println("can't find StrategyInfo by userID = " + userID)
+		} else {
+			log.Println("mongoDB.FindAll() fail")
+		}
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func (m *Manager) GetStrategyInfo(ctx context.Context, strategyID string) (*StrategyInfo, error) {
@@ -121,6 +133,62 @@ func (m *Manager) GetStrategyInfo(ctx context.Context, strategyID string) (*Stra
 	return info, nil
 }
 
+type StrategyInfoUpdater struct {
+	Exchange     string
+	Symbol       string
+	Timeframe    string
+	StrategyName string
+	Script       string
+}
+
+func (m *Manager) UpdateStrategyInfo(ctx context.Context, strategyID string, strategyInfoUpdater *StrategyInfoUpdater) error {
+	info := &StrategyInfo{}
+	err := m.mongoDB.FindOne(ctx, "cryptoQuantV2", "strategy", bson.D{{"strategyID", strategyID}}, info)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			log.Println("FindOne no result")
+			log.Println("can't find Strategy by StrategyID = " + strategyID)
+		} else {
+			log.Println("FindOne fail")
+		}
+		return err
+	}
+
+	if info.Status == Live {
+		return fmt.Errorf("can't update live strategy")
+	}
+
+	updater := bson.D{}
+	if strategyInfoUpdater.Exchange != "" {
+		updater = append(updater, bson.E{"exchange", strategyInfoUpdater.Exchange})
+	}
+	if strategyInfoUpdater.Symbol != "" {
+		updater = append(updater, bson.E{"symbol", strategyInfoUpdater.Symbol})
+	}
+	if strategyInfoUpdater.Timeframe != "" {
+		updater = append(updater, bson.E{"timeframe", strategyInfoUpdater.Timeframe})
+	}
+	if strategyInfoUpdater.StrategyName != "" {
+		updater = append(updater, bson.E{"strategyName", strategyInfoUpdater.StrategyName})
+	}
+	if strategyInfoUpdater.Script != "" {
+		updater = append(updater, bson.E{"script", strategyInfoUpdater.Script})
+	}
+
+	err = m.mongoDB.UpdateOne(ctx, "cryptoQuantV2", "strategy", bson.D{{"strategyID", strategyID}}, updater)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			log.Println("mongoDB.UpdateOne no result")
+			log.Println("can't find StrategyInfo by strategyID = " + strategyID)
+		} else {
+			log.Println("mongoDB.UpdateOne() fail")
+		}
+		return err
+	}
+
+	return nil
+}
+
 func (m *Manager) UpdateStatus(ctx context.Context, strategyID string, status StrategyStatus) error {
 	err := m.mongoDB.UpdateOne(ctx, "cryptoQuantV2", "strategy", bson.D{{"strategyID", strategyID}}, bson.D{{"status", status}})
 	if err != nil {
@@ -130,6 +198,28 @@ func (m *Manager) UpdateStatus(ctx context.Context, strategyID string, status St
 	return nil
 }
 
-func (m *Manager) Remove() {
-	// TODO remove strategy
+func (m *Manager) DeleteStrategy(ctx context.Context, strategyID string) error {
+	info := &StrategyInfo{}
+	err := m.mongoDB.FindOne(ctx, "cryptoQuantV2", "strategy", bson.D{{"strategyID", strategyID}}, info)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			log.Println("FindOne no result")
+			log.Println("can't find Strategy by StrategyID = " + strategyID)
+		} else {
+			log.Println("FindOne fail")
+		}
+		return err
+	}
+
+	if info.Status == Live {
+		return fmt.Errorf("can't delete live strategy")
+	}
+
+	err = m.mongoDB.DeleteOne(ctx, "cryptoQuantV2", "strategy", bson.D{{"strategyID", strategyID}})
+	if err != nil {
+		log.Println("mongoDB.DeleteOne() fail")
+		return err
+	}
+
+	return nil
 }
