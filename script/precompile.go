@@ -85,3 +85,11 @@ func (m *luaPrecompileManager) doCompiledFile(L *lua.LState, proto *lua.Function
 	L.Push(lfunc)
 	return L.PCall(0, lua.MultRet, nil)
 }
+
+func (m *luaPrecompileManager) cleanCache(sourceCode string) error {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	key := m.genKey(sourceCode)
+	delete(m.protoMap, key)
+	return nil
+}

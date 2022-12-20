@@ -74,15 +74,9 @@ func (m *Manager) GetStrategyByID(ctx context.Context, strategyID string) (Strat
 		return s, nil
 	}
 
-	info := &StrategyInfo{}
-	err := m.mongoDB.FindOne(ctx, "cryptoQuantV2", "strategy", bson.D{{"strategyID", strategyID}}, info)
+	info, err := m.GetStrategyInfo(ctx, strategyID)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			log.Println("FindOne no result")
-			log.Println("can't find Strategy by StrategyID = " + strategyID)
-		} else {
-			log.Println("FindOne fail")
-		}
+		log.Println("GetStrategyInfo fail")
 		return nil, err
 	}
 
@@ -187,6 +181,9 @@ func (m *Manager) UpdateStrategyInfo(ctx context.Context, strategyID string, str
 		return err
 	}
 
+	// clean strategy cache
+	delete(m.strategyMap, strategyID)
+
 	return nil
 }
 
@@ -221,6 +218,9 @@ func (m *Manager) DeleteStrategy(ctx context.Context, strategyID string) error {
 		log.Println("mongoDB.DeleteOne() fail")
 		return err
 	}
+
+	// clean strategy cache
+	delete(m.strategyMap, strategyID)
 
 	return nil
 }

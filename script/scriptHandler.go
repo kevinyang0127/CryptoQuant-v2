@@ -224,3 +224,7 @@ func (h *LuaScriptHandler) toLuaScriptKlineData(kls []market.Kline, kl market.Kl
 	LKline.RawSet(lua.LString("isFinal"), lua.LBool(kl.IsFinal))
 	return
 }
+
+func (h *LuaScriptHandler) CleanScriptPrecomplieCache(script string) error {
+	return h.precompileManager.cleanCache(script)
+}

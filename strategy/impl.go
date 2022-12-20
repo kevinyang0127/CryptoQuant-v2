@@ -32,3 +32,14 @@ func (s *LuaScriptStrategy) HandleKline(klines []market.Kline, kline market.Klin
 func (s *LuaScriptStrategy) HandleBackTestKline(simulationID string, klines []market.Kline, kline market.Kline) {
 	s.luaScriptHandler.RunBacktestHandleKline(s.strategyInfo.StrategyID, s.strategyInfo.UserID, simulationID, s.strategyInfo.Script, klines, kline)
 }
+
+func (s *LuaScriptStrategy) UpdateStrategyInfo(newInfo *StrategyInfo) error {
+	err := s.luaScriptHandler.CleanScriptPrecomplieCache(s.strategyInfo.Script)
+	if err != nil {
+		log.Println("luaScriptHandler.CleanScriptPrecomplieCache fail")
+		return err
+	}
+
+	s.strategyInfo = newInfo
+	return nil
+}

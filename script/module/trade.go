@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/shopspring/decimal"
 	lua "github.com/yuin/gopher-lua"
@@ -24,6 +25,7 @@ func GetTradeExports(exchangeManager *exchange.Manager) map[string]lua.LGFunctio
 		"lineNotif":       getLineNotifLGFunc(),
 		"stopLossOrder":   getStopLossOrderLGFunc(exchangeManager),
 		"takeProfitOrder": getTakeProfitOrderLGFunc(exchangeManager),
+		"nowTimeMs":       getNowTimeMsLGFunc(),
 	}
 }
 
@@ -477,6 +479,14 @@ func getTakeProfitOrderLGFunc(exchangeManager *exchange.Manager) lua.LGFunction 
 			log.Println(err)
 		}
 		return 0
+	}
+	return fn
+}
+
+func getNowTimeMsLGFunc() lua.LGFunction {
+	fn := func(L *lua.LState) int {
+		L.Push(lua.LNumber(time.Now().UnixMilli()))
+		return 1
 	}
 	return fn
 }
